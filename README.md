@@ -2,6 +2,171 @@
 
 This repository contains a collection of Terraform templates for use with Backstage Software Templates. These templates help provision cloud infrastructure across AWS, Azure, and GCP in a standardized, repeatable way.
 
+## Integration with Backstage
+
+### Prerequisites
+
+1. A running Backstage instance
+2. Software Templates plugin installed and configured
+3. Required permissions for cloud providers (AWS, Azure, GCP)
+
+### Integration Steps
+
+1. **Register the Template Location**:
+
+   ```yaml
+   # app-config.yaml
+   catalog:
+     locations:
+       - type: url
+         target: https://github.com/YOUR_ORG/YOUR_REPO/blob/main/catalog-info.yaml
+         rules:
+           - allow: [Template]
+   ```
+
+2. **Configure Cloud Provider Credentials**:
+
+   ```yaml
+   # app-config.yaml
+   scaffolder:
+     azure:
+       credentials:
+         clientId: ${AZURE_CLIENT_ID}
+         clientSecret: ${AZURE_CLIENT_SECRET}
+         tenantId: ${AZURE_TENANT_ID}
+     aws:
+       credentials:
+         accessKeyId: ${AWS_ACCESS_KEY_ID}
+         secretAccessKey: ${AWS_SECRET_ACCESS_KEY}
+     gcp:
+       credentials:
+         application_credentials: ${GOOGLE_APPLICATION_CREDENTIALS}
+   ```
+
+3. **Enable Required Backstage Plugins**:
+   ```typescript
+   // packages/app/src/plugins.ts
+   export { scaffolderPlugin } from '@backstage/plugin-scaffolder';
+   export { catalogPlugin } from '@backstage/plugin-catalog';
+   ```
+
+### Accessing Templates
+
+1. **Via Backstage UI**:
+
+   - Navigate to `Create` in your Backstage instance
+   - Select from available templates:
+     - AWS Templates (Lambda, SageMaker, etc.)
+     - Azure Templates (Functions, ML Pipeline, etc.)
+     - GCP Templates (Cloud Run, Vertex AI, etc.)
+
+2. **Via Backstage API**:
+
+   ```bash
+   # List available templates
+   curl -X GET http://your-backstage-instance/api/catalog/templates
+
+   # Get template by name
+   curl -X GET http://your-backstage-instance/api/catalog/templates/terraform-aws-lambda
+   ```
+
+### Usage Example
+
+1. **Select Template**:
+
+   - Go to Backstage's Create Component page
+   - Choose a template (e.g., AWS Lambda)
+
+2. **Fill Template Form**:
+
+   ```yaml
+   # Example: AWS Lambda
+   functionName: my-lambda
+   runtime: nodejs18.x
+   handler: index.handler
+   memorySize: 128
+   timeout: 30
+   ```
+
+3. **Generate Infrastructure**:
+   - Click "Create" to generate Terraform configuration
+   - Follow deployment instructions in generated README
+
+### Template Parameters
+
+Each template accepts specific parameters:
+
+**AWS Lambda**:
+
+- `functionName`: Name of the Lambda function
+- `runtime`: Runtime environment (nodejs, python, etc.)
+- `handler`: Function handler path
+- `memorySize`: Memory allocation in MB
+- `timeout`: Function timeout in seconds
+
+**Azure ML Pipeline**:
+
+- `workspaceName`: Azure ML workspace name
+- `pipelineName`: Name of the ML pipeline
+- `location`: Azure region
+- `computeType`: Compute target type
+
+**GCP Cloud Run**:
+
+- `serviceName`: Name of the Cloud Run service
+- `region`: GCP region
+- `image`: Container image to deploy
+- `memory`: Memory allocation
+
+## Troubleshooting
+
+Common issues and solutions:
+
+1. **Template Not Appearing**:
+
+   - Verify catalog-info.yaml is correctly registered
+   - Check Backstage logs for registration errors
+   - Ensure template follows Backstage schema
+
+2. **Permission Errors**:
+
+   - Verify cloud provider credentials
+   - Check required IAM roles/permissions
+   - Ensure environment variables are set
+
+3. **Terraform Errors**:
+   - Verify Terraform installation
+   - Check provider configurations
+   - Validate input parameters
+
+## Security Considerations
+
+1. **Credential Management**:
+
+   - Use environment variables for secrets
+   - Implement proper IAM roles
+   - Rotate credentials regularly
+
+2. **Access Control**:
+   - Configure RBAC in Backstage
+   - Limit template access by teams
+   - Audit template usage
+
+## Support and Maintenance
+
+For issues or contributions:
+
+1. Open an issue in the repository
+2. Follow contribution guidelines
+3. Contact platform team for urgent issues
+
+## References
+
+- [Backstage Documentation](https://backstage.io/docs)
+- [Software Templates](https://backstage.io/docs/features/software-templates)
+- [Terraform Documentation](https://www.terraform.io/docs)
+- [Cloud Provider Docs](https://backstage.io/docs/integrations)
+
 ## Overview
 
 The templates in this repository follow a consistent structure and are designed to be used with Backstage's Software Templates feature. Each template provides infrastructure-as-code definitions using Terraform to create and manage cloud resources.
@@ -75,3 +240,170 @@ To add a new template:
 3. Create a `skeleton` folder with the Terraform files and other resources
 4. Include a `catalog-info.yaml` for Backstage integration
 5. Add documentation in a README.md file
+
+## Additional Backstage Configuration
+
+### 1. Install Required Dependencies
+
+Add these to your Backstage app's `package.json`:
+
+```json
+{
+  "dependencies": {
+    "@backstage/plugin-scaffolder-backend-module-terraform": "^1.0.0",
+    "@backstage/plugin-terraform": "^0.1.0",
+    "@backstage/plugin-kubernetes": "^0.1.0"
+  }
+}
+```
+
+### 2. Configure Backend
+
+In your `packages/backend/src/plugins/scaffolder.ts`:
+
+```typescript
+import { ScaffolderEntitiesProcessor } from '@backstage/plugin-scaffolder-backend';
+import { TerraformGenerator } from '@backstage/plugin-scaffolder-backend-module-terraform';
+
+export default async function createPlugin(
+  env: PluginEnvironment
+): Promise<Router> {
+  const scaffolder = await createRouter({
+    actions: [
+      createBuiltinActions({
+        containerRunner,
+        integrations,
+        config: env.config,
+        catalogClient: env.catalogClient,
+        reader: env.reader,
+      }),
+      TerraformGenerator(), // Add Terraform generator
+    ],
+    catalogClient: env.catalogClient,
+    logger: env.logger,
+    config: env.config,
+    database: env.database,
+    reader: env.reader,
+  });
+
+  return scaffolder;
+}
+```
+
+### 3. Add Required Plugins to Your Backstage Instance
+
+In `packages/app/src/App.tsx`:
+
+```typescript
+import { TerraformPage } from '@backstage/plugin-terraform';
+import { KubernetesPage } from '@backstage/plugin-kubernetes';
+
+const routes = (
+  <FlatRoutes>
+    {/* ... other routes ... */}
+    <Route path="/terraform" element={<TerraformPage />} />
+    <Route path="/kubernetes" element={<KubernetesPage />} />
+  </FlatRoutes>
+);
+```
+
+### 4. Configure RBAC (Optional but Recommended)
+
+In your `app-config.yaml`:
+
+```yaml
+permission:
+  rbac:
+    roles:
+      - name: terraform-admin
+        permissions:
+          - policy: 'catalog-entity'
+            effect: allow
+            resourceType: 'template'
+            conditions:
+              - field: 'kind'
+                value: 'Template'
+              - field: 'metadata.tags'
+                value: 'terraform'
+      - name: infrastructure-deployer
+        permissions:
+          - policy: 'scaffolder'
+            effect: allow
+            resourceType: 'template'
+            conditions:
+              - field: 'metadata.tags'
+                value: 'terraform'
+```
+
+### 5. Add Template Discovery (Optional)
+
+To automatically discover new templates:
+
+```yaml
+# app-config.yaml
+catalog:
+  rules:
+    - allow: [Component, API, Resource, Location, Template]
+  locations:
+    - type: url
+      target: https://github.com/YOUR_ORG/YOUR_REPO/blob/main/catalog-info.yaml
+      rules:
+        - allow: [Template]
+    - type: url
+      target: https://github.com/YOUR_ORG/YOUR_REPO/blob/main/templates/*/*/template.yaml
+      rules:
+        - allow: [Template]
+```
+
+### 6. Configure Terraform Backend (Recommended)
+
+Add a default Terraform backend configuration:
+
+```yaml
+# app-config.yaml
+scaffolder:
+  terraform:
+    defaultBackend:
+      type: s3 # or azurerm, gcs
+      config:
+        bucket: your-terraform-state-bucket
+        region: us-west-2
+        key: 'terraform.tfstate'
+```
+
+### 7. Add Template Validation (Optional)
+
+Create a template validation workflow:
+
+```yaml
+# .github/workflows/template-validation.yml
+name: Template Validation
+on:
+  pull_request:
+    paths:
+      - 'templates/**'
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Validate Templates
+        uses: backstage/backstage-cli@main
+        with:
+          args: template:verify --path templates
+```
+
+### 8. Monitor Template Usage (Optional)
+
+Enable template usage analytics:
+
+```yaml
+# app-config.yaml
+backend:
+  analytics:
+    enabled: true
+    implementations:
+      - name: google-analytics
+        config:
+          trackingId: 'YOUR-GA-TRACKING-ID'
+```
