@@ -1,0 +1,74 @@
+apiVersion: scaffolder.backstage.io/v1beta3
+kind: Template
+metadata:
+  name: terraform-azure-ml-pipeline
+  title: Azure ML Pipeline
+  description: Create a new Azure Machine Learning pipeline using Terraform
+  tags:
+    - terraform
+    - azure
+    - ml
+    - pipeline
+spec:
+  owner: ml-infrastructure-team
+  type: infrastructure
+
+  parameters:
+    - title: Azure ML Pipeline Information
+      required:
+        - workspaceName
+        - pipelineName
+      properties:
+        workspaceName:
+          title: Workspace Name
+          type: string
+          description: Name of the Azure ML workspace
+          ui:autofocus: true
+        pipelineName:
+          title: Pipeline Name
+          type: string
+          description: Name of the ML pipeline
+        description:
+          title: Description
+          type: string
+          description: Description of the ML pipeline
+        location:
+          title: Azure Region
+          type: string
+          description: Azure region to deploy to
+          default: eastus
+        computeType:
+          title: Compute Type
+          type: string
+          description: Type of compute target to use for the pipeline
+          enum:
+            - amlcompute
+            - kubernetes
+            - databricks
+          default: amlcompute
+        vmSize:
+          title: VM Size
+          type: string
+          description: VM size for the compute target
+          default: Standard_D2_v2
+
+  steps:
+    - id: fetch-template
+      name: Fetch Template
+      action: fetch:template
+      input:
+        url: ./skeleton
+        values:
+          workspaceName: ${{ parameters.workspaceName }}
+          pipelineName: ${{ parameters.pipelineName }}
+          description: ${{ parameters.description }}
+          location: ${{ parameters.location }}
+          computeType: ${{ parameters.computeType }}
+          vmSize: ${{ parameters.vmSize }}
+
+  output:
+    links:
+      - title: GitHub Repository
+        url: ${{ steps.publish.output.remoteUrl || '/' }}
+      - title: Azure ML Studio
+        url: https://ml.azure.com/workspaces

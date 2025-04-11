@@ -1,0 +1,65 @@
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: ${{ values.endpointName }}
+  description: ${{ values.description || 'AWS SageMaker Endpoint' }}
+  annotations:
+    backstage.io/managed-by-location: url:./catalog-info.yaml
+    backstage.io/managed-by-origin-location: url:./catalog-info.yaml
+    aws.com/region: ${{ values.region }}
+    sagemaker.aws.com/model-name: ${{ values.modelName }}
+    sagemaker.aws.com/instance-type: ${{ values.instanceType }}
+    sagemaker.aws.com/instance-count: '${{ values.instanceCount }}'
+  labels:
+    cloud: aws
+    type: ml-endpoint
+    service: sagemaker
+spec:
+  type: service
+  lifecycle: production
+  owner: ml-platform-team
+  system: ml-serving
+  dependsOn:
+    - resource:aws:sagemaker:${{ values.modelName }}
+  providesApis:
+    - ${{ values.endpointName }}-api
+---
+apiVersion: backstage.io/v1alpha1
+kind: Resource
+metadata:
+  name: sagemaker-model-${{ values.modelName }}
+  description: SageMaker Model for the endpoint
+  annotations:
+    aws.com/region: ${{ values.region }}
+  labels:
+    cloud: aws
+    type: ml-model
+spec:
+  type: ml-model
+  lifecycle: production
+  owner: ml-platform-team
+  system: ml-serving
+---
+apiVersion: backstage.io/v1alpha1
+kind: API
+metadata:
+  name: ${{ values.endpointName }}-api
+  description: API for interacting with SageMaker Endpoint
+spec:
+  type: openapi
+  lifecycle: production
+  owner: ml-platform-team
+  system: ml-serving
+  definition: |
+    openapi: "3.0.0"
+    info:
+      version: 1.0.0
+      title: ${{ values.endpointName }} API
+      description: API for making predictions with the SageMaker endpoint
+    paths:
+      /invocations:
+        post:
+          summary: Invoke the endpoint
+          responses:
+            '200':
+              description: Prediction results

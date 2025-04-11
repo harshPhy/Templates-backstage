@@ -1,0 +1,84 @@
+apiVersion: scaffolder.backstage.io/v1beta3
+kind: Template
+metadata:
+  name: terraform-azure-spark-pipeline
+  title: Azure Spark Pipeline on Databricks
+  description: Deploy a Spark pipeline on Azure Databricks using Terraform
+  tags:
+    - terraform
+    - azure
+    - databricks
+    - spark
+    - data-pipeline
+spec:
+  owner: data-platform-team
+  type: infrastructure
+
+  parameters:
+    - title: Azure Databricks Spark Pipeline Information
+      required:
+        - resourceGroupName
+        - workspaceName
+      properties:
+        resourceGroupName:
+          title: Resource Group Name
+          type: string
+          description: Name of the Azure resource group
+          ui:autofocus: true
+        workspaceName:
+          title: Databricks Workspace Name
+          type: string
+          description: Name of the Azure Databricks workspace
+        location:
+          title: Azure Region
+          type: string
+          description: Azure region to deploy to
+          default: eastus
+        sparkVersion:
+          title: Spark Version
+          type: string
+          description: Version of Spark to use
+          default: 11.3.x-scala2.12
+        nodeType:
+          title: Node Type
+          type: string
+          description: Type of Databricks worker nodes
+          default: Standard_DS3_v2
+        minWorkers:
+          title: Min Workers
+          type: number
+          description: Minimum number of workers
+          default: 2
+        maxWorkers:
+          title: Max Workers
+          type: number
+          description: Maximum number of workers
+          default: 8
+        notebookPath:
+          title: Notebook Path
+          type: string
+          description: Path to the Databricks notebook with Spark job
+          default: '/Shared/job-notebook'
+
+  steps:
+    - id: fetch-template
+      name: Fetch Template
+      action: fetch:template
+      input:
+        url: ./skeleton
+        values:
+          resourceGroupName: ${{ parameters.resourceGroupName }}
+          workspaceName: ${{ parameters.workspaceName }}
+          location: ${{ parameters.location }}
+          sparkVersion: ${{ parameters.sparkVersion }}
+          nodeType: ${{ parameters.nodeType }}
+          minWorkers: ${{ parameters.minWorkers }}
+          maxWorkers: ${{ parameters.maxWorkers }}
+          notebookPath: ${{ parameters.notebookPath }}
+
+  output:
+    links:
+      - title: GitHub Repository
+        url: ${{ steps.publish.output.remoteUrl || '/' }}
+      - title: Azure Portal
+        url: https://portal.azure.com

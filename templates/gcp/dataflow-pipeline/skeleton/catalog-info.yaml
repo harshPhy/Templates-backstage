@@ -1,0 +1,67 @@
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: ${{ values.jobName }}-dataflow
+  description: ${{ values.description || 'GCP Dataflow Pipeline' }}
+  annotations:
+    backstage.io/managed-by-location: url:./catalog-info.yaml
+    backstage.io/managed-by-origin-location: url:./catalog-info.yaml
+    gcp.com/project-id: ${{ values.projectId }}
+    gcp.com/region: ${{ values.region }}
+    dataflow.gcp.com/job-type: ${{ values.jobType || 'batch' }}
+    dataflow.gcp.com/machine-type: ${{ values.machineType }}
+    dataflow.gcp.com/max-workers: '${{ values.maxWorkers }}'
+  labels:
+    cloud: gcp
+    type: data-pipeline
+    service: dataflow
+spec:
+  type: service
+  lifecycle: production
+  owner: data-infrastructure-team
+  system: data-pipelines
+  dependsOn:
+    - resource:gcp:dataflow:${{ values.projectId }}
+  providesApis:
+    - dataflow-job-api
+---
+apiVersion: backstage.io/v1alpha1
+kind: Resource
+metadata:
+  name: dataflow-${{ values.projectId }}
+  description: Dataflow service in GCP project
+  annotations:
+    gcp.com/project-id: ${{ values.projectId }}
+    gcp.com/region: ${{ values.region }}
+  labels:
+    cloud: gcp
+    type: data-processing
+spec:
+  type: data-processing-service
+  lifecycle: production
+  owner: data-infrastructure-team
+  system: data-pipelines
+---
+apiVersion: backstage.io/v1alpha1
+kind: API
+metadata:
+  name: dataflow-job-api
+  description: API for interacting with Dataflow jobs
+spec:
+  type: openapi
+  lifecycle: production
+  owner: data-infrastructure-team
+  system: data-pipelines
+  definition: |
+    openapi: "3.0.0"
+    info:
+      version: 1.0.0
+      title: Dataflow Jobs API
+      description: API for managing Dataflow jobs
+    paths:
+      /jobs:
+        get:
+          summary: List jobs
+          responses:
+            '200':
+              description: List of jobs

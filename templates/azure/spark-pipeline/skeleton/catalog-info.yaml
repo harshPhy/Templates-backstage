@@ -1,0 +1,67 @@
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: ${{ values.jobName }}-spark
+  description: ${{ values.description || 'Azure Databricks Spark Pipeline' }}
+  annotations:
+    backstage.io/managed-by-location: url:./catalog-info.yaml
+    backstage.io/managed-by-origin-location: url:./catalog-info.yaml
+    azure.com/location: ${{ values.location }}
+    azure.com/resource-group: ${{ values.resourceGroupName }}
+    databricks.azure.com/cluster-name: ${{ values.clusterName }}
+    databricks.azure.com/node-type: ${{ values.nodeType }}
+    databricks.azure.com/spark-version: ${{ values.sparkVersion }}
+  labels:
+    cloud: azure
+    type: data-pipeline
+    service: databricks
+spec:
+  type: service
+  lifecycle: production
+  owner: data-infrastructure-team
+  system: data-pipelines
+  dependsOn:
+    - resource:azure:databricks:${{ values.workspaceName }}
+  providesApis:
+    - databricks-job-api
+---
+apiVersion: backstage.io/v1alpha1
+kind: Resource
+metadata:
+  name: ${{ values.workspaceName }}
+  description: Azure Databricks Workspace
+  annotations:
+    azure.com/location: ${{ values.location }}
+    azure.com/resource-group: ${{ values.resourceGroupName }}
+  labels:
+    cloud: azure
+    type: data-processing
+spec:
+  type: data-processing-workspace
+  lifecycle: production
+  owner: data-infrastructure-team
+  system: data-pipelines
+---
+apiVersion: backstage.io/v1alpha1
+kind: API
+metadata:
+  name: databricks-job-api
+  description: API for interacting with Databricks jobs
+spec:
+  type: openapi
+  lifecycle: production
+  owner: data-infrastructure-team
+  system: data-pipelines
+  definition: |
+    openapi: "3.0.0"
+    info:
+      version: 1.0.0
+      title: Databricks Jobs API
+      description: API for managing Databricks Spark jobs
+    paths:
+      /jobs:
+        post:
+          summary: Submit a job
+          responses:
+            '200':
+              description: Job submitted successfully

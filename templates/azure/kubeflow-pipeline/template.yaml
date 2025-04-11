@@ -1,0 +1,79 @@
+apiVersion: scaffolder.backstage.io/v1beta3
+kind: Template
+metadata:
+  name: terraform-azure-kubeflow-pipeline
+  title: Azure Kubeflow Pipeline
+  description: Deploy Kubeflow pipelines on Azure Kubernetes Service using Terraform
+  tags:
+    - terraform
+    - azure
+    - kubernetes
+    - kubeflow
+    - ml
+    - pipeline
+spec:
+  owner: ml-platform-team
+  type: infrastructure
+
+  parameters:
+    - title: Azure Kubeflow Pipeline Information
+      required:
+        - resourceGroupName
+        - clusterName
+      properties:
+        resourceGroupName:
+          title: Resource Group Name
+          type: string
+          description: Name of the Azure resource group
+          ui:autofocus: true
+        clusterName:
+          title: AKS Cluster Name
+          type: string
+          description: Name of the Azure Kubernetes Service cluster
+        location:
+          title: Azure Region
+          type: string
+          description: Azure region to deploy to
+          default: eastus
+        kubernetesVersion:
+          title: Kubernetes Version
+          type: string
+          description: Version of Kubernetes to use
+          default: 1.25.5
+        vmSize:
+          title: VM Size
+          type: string
+          description: Size of the VM for AKS nodes
+          default: Standard_D4s_v3
+        nodeCount:
+          title: Node Count
+          type: number
+          description: Number of nodes in the AKS cluster
+          default: 3
+        kubeflowVersion:
+          title: Kubeflow Version
+          type: string
+          description: Version of Kubeflow to deploy
+          default: 1.7.0
+
+  steps:
+    - id: fetch-template
+      name: Fetch Template
+      action: fetch:template
+      input:
+        url: ./skeleton
+        values:
+          resourceGroupName: ${{ parameters.resourceGroupName }}
+          clusterName: ${{ parameters.clusterName }}
+          location: ${{ parameters.location }}
+          kubernetesVersion: ${{ parameters.kubernetesVersion }}
+          vmSize: ${{ parameters.vmSize }}
+          nodeCount: ${{ parameters.nodeCount }}
+          kubeflowVersion: ${{ parameters.kubeflowVersion }}
+
+  output:
+    links:
+      - title: GitHub Repository
+        url: ${{ steps.publish.output.remoteUrl || '/' }}
+      - title: Azure Portal
+        url: https://portal.azure.com

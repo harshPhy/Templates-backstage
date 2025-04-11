@@ -1,0 +1,78 @@
+apiVersion: scaffolder.backstage.io/v1beta3
+kind: Template
+metadata:
+  name: terraform-aws-lambda
+  title: AWS Lambda Function
+  description: Create a new AWS Lambda function using Terraform
+  tags:
+    - terraform
+    - aws
+    - lambda
+    - serverless
+spec:
+  owner: infrastructure-team
+  type: infrastructure
+
+  parameters:
+    - title: Lambda Function Information
+      required:
+        - functionName
+        - runtime
+        - handler
+      properties:
+        functionName:
+          title: Function Name
+          type: string
+          description: Name of the Lambda function
+          ui:autofocus: true
+        description:
+          title: Description
+          type: string
+          description: Description of the Lambda function
+        runtime:
+          title: Runtime
+          type: string
+          description: Runtime environment for the Lambda function
+          enum:
+            - nodejs18.x
+            - python3.9
+            - python3.10
+            - java11
+            - go1.x
+          default: python3.9
+        handler:
+          title: Handler
+          type: string
+          description: Function handler (e.g., index.handler for Node.js, main.handler for Python)
+          default: main.handler
+        memorySize:
+          title: Memory Size (MB)
+          type: number
+          description: Memory size for the Lambda function in MB
+          default: 128
+        timeout:
+          title: Timeout (seconds)
+          type: number
+          description: Function timeout in seconds
+          default: 30
+
+  steps:
+    - id: fetch-template
+      name: Fetch Template
+      action: fetch:template
+      input:
+        url: ./skeleton
+        values:
+          functionName: ${{ parameters.functionName }}
+          description: ${{ parameters.description }}
+          runtime: ${{ parameters.runtime }}
+          handler: ${{ parameters.handler }}
+          memorySize: ${{ parameters.memorySize }}
+          timeout: ${{ parameters.timeout }}
+
+  output:
+    links:
+      - title: GitHub Repository
+        url: ${{ steps.publish.output.remoteUrl || '/' }}
+      - title: Open in Terraform Cloud
+        url: https://app.terraform.io/app/your-org/workspaces

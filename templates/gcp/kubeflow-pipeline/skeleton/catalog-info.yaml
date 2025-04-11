@@ -1,0 +1,67 @@
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: ${{ values.clusterName }}-kubeflow-pipeline
+  description: Kubeflow Pipeline running on GKE cluster in GCP
+  annotations:
+    backstage.io/managed-by-location: url:./catalog-info.yaml
+    backstage.io/managed-by-origin-location: url:./catalog-info.yaml
+    gcp.com/project-id: ${{ values.projectId }}
+    gcp.com/region: ${{ values.region }}
+    gcp.com/zone: ${{ values.zone }}
+  labels:
+    cloud: gcp
+    type: ml-pipeline
+    ml-platform: kubeflow
+spec:
+  type: service
+  lifecycle: production
+  owner: ml-platform-team
+  system: ml-pipelines
+  dependsOn:
+    - resource:gcp:gke:${{ values.clusterName }}
+  providesApis:
+    - kubeflow-pipeline-api
+---
+apiVersion: backstage.io/v1alpha1
+kind: Resource
+metadata:
+  name: ${{ values.clusterName }}
+  description: GKE Cluster hosting Kubeflow Pipeline
+  annotations:
+    gcp.com/project-id: ${{ values.projectId }}
+    gcp.com/location: ${{ values.zone }}
+    kubernetes.io/version: ${{ values.kubernetesVersion }}
+    kubeflow.org/version: ${{ values.kubeflowVersion }}
+  labels:
+    cloud: gcp
+    type: kubernetes
+spec:
+  type: kubernetes-cluster
+  lifecycle: production
+  owner: ml-platform-team
+  system: ml-pipelines
+---
+apiVersion: backstage.io/v1alpha1
+kind: API
+metadata:
+  name: kubeflow-pipeline-api
+  description: API for interacting with Kubeflow Pipelines
+spec:
+  type: openapi
+  lifecycle: production
+  owner: ml-platform-team
+  system: ml-pipelines
+  definition: |
+    openapi: "3.0.0"
+    info:
+      version: 1.0.0
+      title: Kubeflow Pipelines API
+      description: API for managing ML pipelines in Kubeflow
+    paths:
+      /pipelines:
+        get:
+          summary: List pipelines
+          responses:
+            '200':
+              description: List of pipelines

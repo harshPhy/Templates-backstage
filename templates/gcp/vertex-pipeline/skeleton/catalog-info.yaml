@@ -1,0 +1,65 @@
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: ${{ values.pipelineName }}-vertex-pipeline
+  description: ${{ values.description || 'Vertex AI Pipeline on Google Cloud' }}
+  annotations:
+    backstage.io/managed-by-location: url:./catalog-info.yaml
+    backstage.io/managed-by-origin-location: url:./catalog-info.yaml
+    gcp.com/project-id: ${{ values.projectId }}
+    gcp.com/region: ${{ values.region }}
+    vertex.gcp.com/pipeline-type: ${{ values.pipelineType }}
+  labels:
+    cloud: gcp
+    type: ml-pipeline
+    service: vertex-ai
+spec:
+  type: service
+  lifecycle: production
+  owner: ml-platform-team
+  system: ml-pipelines
+  dependsOn:
+    - resource:gcp:vertex-ai:${{ values.projectId }}
+  providesApis:
+    - vertex-pipeline-api
+---
+apiVersion: backstage.io/v1alpha1
+kind: Resource
+metadata:
+  name: vertex-ai-${{ values.projectId }}
+  description: Vertex AI in GCP Project
+  annotations:
+    gcp.com/project-id: ${{ values.projectId }}
+    gcp.com/region: ${{ values.region }}
+  labels:
+    cloud: gcp
+    type: ml-platform
+spec:
+  type: ml-platform
+  lifecycle: production
+  owner: ml-platform-team
+  system: ml-pipelines
+---
+apiVersion: backstage.io/v1alpha1
+kind: API
+metadata:
+  name: vertex-pipeline-api
+  description: API for interacting with Vertex AI Pipelines
+spec:
+  type: openapi
+  lifecycle: production
+  owner: ml-platform-team
+  system: ml-pipelines
+  definition: |
+    openapi: "3.0.0"
+    info:
+      version: 1.0.0
+      title: Vertex AI Pipelines API
+      description: API for managing ML pipelines in Vertex AI
+    paths:
+      /pipelines:
+        get:
+          summary: List pipelines
+          responses:
+            '200':
+              description: List of pipelines

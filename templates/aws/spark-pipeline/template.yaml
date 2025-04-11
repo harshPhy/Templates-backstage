@@ -1,0 +1,88 @@
+apiVersion: scaffolder.backstage.io/v1beta3
+kind: Template
+metadata:
+  name: terraform-aws-spark-pipeline
+  title: AWS Spark Pipeline on EMR
+  description: Deploy a Spark pipeline on AWS EMR using Terraform
+  tags:
+    - terraform
+    - aws
+    - emr
+    - spark
+    - data-pipeline
+spec:
+  owner: data-platform-team
+  type: infrastructure
+
+  parameters:
+    - title: EMR Spark Pipeline Information
+      required:
+        - clusterName
+        - s3BucketName
+      properties:
+        clusterName:
+          title: Cluster Name
+          type: string
+          description: Name of the EMR cluster
+          ui:autofocus: true
+        description:
+          title: Description
+          type: string
+          description: Description of the EMR cluster
+        s3BucketName:
+          title: S3 Bucket Name
+          type: string
+          description: Name of the S3 bucket for logs and data
+        releaseLabel:
+          title: EMR Release Label
+          type: string
+          description: Amazon EMR release version
+          default: emr-6.9.0
+        applications:
+          title: Applications
+          type: array
+          description: List of applications to install on the cluster
+          default: ['Spark', 'Hive', 'Livy']
+        masterInstanceType:
+          title: Master Instance Type
+          type: string
+          description: Instance type for the master node
+          default: m5.xlarge
+        coreInstanceType:
+          title: Core Instance Type
+          type: string
+          description: Instance type for core nodes
+          default: m5.xlarge
+        coreInstanceCount:
+          title: Core Instance Count
+          type: number
+          description: Number of core instances
+          default: 2
+        sparkJobScript:
+          title: Spark Job Script
+          type: string
+          description: S3 path to the Spark job script
+
+  steps:
+    - id: fetch-template
+      name: Fetch Template
+      action: fetch:template
+      input:
+        url: ./skeleton
+        values:
+          clusterName: ${{ parameters.clusterName }}
+          description: ${{ parameters.description }}
+          s3BucketName: ${{ parameters.s3BucketName }}
+          releaseLabel: ${{ parameters.releaseLabel }}
+          applications: ${{ parameters.applications }}
+          masterInstanceType: ${{ parameters.masterInstanceType }}
+          coreInstanceType: ${{ parameters.coreInstanceType }}
+          coreInstanceCount: ${{ parameters.coreInstanceCount }}
+          sparkJobScript: ${{ parameters.sparkJobScript }}
+
+  output:
+    links:
+      - title: GitHub Repository
+        url: ${{ steps.publish.output.remoteUrl || '/' }}
+      - title: AWS EMR Console
+        url: https://console.aws.amazon.com/elasticmapreduce/home

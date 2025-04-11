@@ -1,0 +1,84 @@
+apiVersion: scaffolder.backstage.io/v1beta3
+kind: Template
+metadata:
+  name: terraform-aws-sagemaker-pipeline
+  title: AWS SageMaker Pipeline
+  description: Create a new SageMaker pipeline for MLOps/LLMOps using Terraform
+  tags:
+    - terraform
+    - aws
+    - sagemaker
+    - ml
+    - pipeline
+spec:
+  owner: ml-platform-team
+  type: infrastructure
+
+  parameters:
+    - title: SageMaker Pipeline Information
+      required:
+        - pipelineName
+        - roleArn
+      properties:
+        pipelineName:
+          title: Pipeline Name
+          type: string
+          description: Name of the SageMaker pipeline
+          ui:autofocus: true
+        description:
+          title: Description
+          type: string
+          description: Description of the pipeline
+        roleArn:
+          title: IAM Role ARN
+          type: string
+          description: ARN of the IAM role that SageMaker can assume to perform tasks
+        pipelineDefinition:
+          title: Pipeline Definition Type
+          type: string
+          description: Type of pipeline definition
+          enum:
+            - training
+            - processing
+            - inference
+            - custom
+          default: training
+        instanceType:
+          title: Instance Type
+          type: string
+          description: Amazon EC2 instance type for training/processing jobs
+          default: ml.m5.large
+        tags:
+          title: Tags
+          type: array
+          description: Tags to apply to the pipeline
+          items:
+            type: object
+            properties:
+              key:
+                title: Key
+                type: string
+              value:
+                title: Value
+                type: string
+
+  steps:
+    - id: fetch-template
+      name: Fetch Template
+      action: fetch:template
+      input:
+        url: ./skeleton
+        values:
+          pipelineName: ${{ parameters.pipelineName }}
+          description: ${{ parameters.description }}
+          roleArn: ${{ parameters.roleArn }}
+          pipelineDefinition: ${{ parameters.pipelineDefinition }}
+          instanceType: ${{ parameters.instanceType }}
+          tags: ${{ parameters.tags }}
+
+  output:
+    links:
+      - title: GitHub Repository
+        url: ${{ steps.publish.output.remoteUrl || '/' }}
+      - title: AWS SageMaker Console
+        url: https://console.aws.amazon.com/sagemaker/home#/pipelines

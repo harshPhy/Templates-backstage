@@ -1,0 +1,39 @@
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: ${{ values.pipelineName }}
+  description: ${{ values.description || 'Azure Machine Learning Pipeline' }}
+  annotations:
+    backstage.io/managed-by-location: url:./catalog-info.yaml
+    backstage.io/managed-by-origin-location: url:./catalog-info.yaml
+    azure.com/workspace: ${{ values.workspaceName }}
+    azure.com/location: ${{ values.location }}
+    azure.com/compute-type: ${{ values.computeType }}
+    azure.com/vm-size: ${{ values.vmSize }}
+  labels:
+    cloud: azure
+    type: ml-pipeline
+    service: azure-ml
+spec:
+  type: service
+  lifecycle: production
+  owner: ml-infrastructure-team
+  system: ml-pipelines
+  dependsOn:
+    - resource:azure:ml-workspace:${{ values.workspaceName }}
+---
+apiVersion: backstage.io/v1alpha1
+kind: Resource
+metadata:
+  name: ${{ values.workspaceName }}
+  description: Azure ML Workspace hosting the ML Pipeline
+  annotations:
+    azure.com/location: ${{ values.location }}
+  labels:
+    cloud: azure
+    type: ml-workspace
+spec:
+  type: ml-workspace
+  lifecycle: production
+  owner: ml-infrastructure-team
+  system: ml-pipelines

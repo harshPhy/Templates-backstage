@@ -1,0 +1,80 @@
+apiVersion: scaffolder.backstage.io/v1beta3
+kind: Template
+metadata:
+  name: terraform-gcp-vertex-pipeline
+  title: GCP Vertex AI Pipeline
+  description: Deploy a Vertex AI pipeline for ML workflows using Terraform
+  tags:
+    - terraform
+    - gcp
+    - vertex-ai
+    - ml
+    - pipeline
+spec:
+  owner: ml-platform-team
+  type: infrastructure
+
+  parameters:
+    - title: Vertex AI Pipeline Information
+      required:
+        - projectId
+        - pipelineName
+      properties:
+        projectId:
+          title: GCP Project ID
+          type: string
+          description: Google Cloud Project ID
+          ui:autofocus: true
+        pipelineName:
+          title: Pipeline Name
+          type: string
+          description: Name of the Vertex AI pipeline
+        region:
+          title: GCP Region
+          type: string
+          description: GCP region to deploy to
+          default: us-central1
+        description:
+          title: Description
+          type: string
+          description: Description of the pipeline
+        pipelineSpecPath:
+          title: Pipeline Specification Path
+          type: string
+          description: GCS path to the pipeline specification file
+        serviceAccount:
+          title: Service Account
+          type: string
+          description: Service account to run the pipeline
+        machineType:
+          title: Machine Type
+          type: string
+          description: Machine type for pipeline components
+          default: n1-standard-4
+        network:
+          title: VPC Network
+          type: string
+          description: VPC network to use for the pipeline
+
+  steps:
+    - id: fetch-template
+      name: Fetch Template
+      action: fetch:template
+      input:
+        url: ./skeleton
+        values:
+          projectId: ${{ parameters.projectId }}
+          pipelineName: ${{ parameters.pipelineName }}
+          region: ${{ parameters.region }}
+          description: ${{ parameters.description }}
+          pipelineSpecPath: ${{ parameters.pipelineSpecPath }}
+          serviceAccount: ${{ parameters.serviceAccount }}
+          machineType: ${{ parameters.machineType }}
+          network: ${{ parameters.network }}
+
+  output:
+    links:
+      - title: GitHub Repository
+        url: ${{ steps.publish.output.remoteUrl || '/' }}
+      - title: Google Cloud Console
+        url: https://console.cloud.google.com/vertex-ai/pipelines
