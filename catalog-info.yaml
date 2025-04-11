@@ -17,7 +17,7 @@ metadata:
       title: Backstage Templates Documentation
       icon: docs
 spec:
-  type: url
+  owner: platform-team
   targets:
     # AWS templates
     - ./templates/aws/lambda-function/template.yaml

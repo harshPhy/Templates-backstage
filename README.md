@@ -24,11 +24,18 @@ This repository contains a collection of Terraform templates for use with Backst
            - allow: [Template]
    ```
 
-2. **Configure Cloud Provider Credentials**:
+2. **Configure Cloud Provider and GitHub Credentials**:
 
    ```yaml
    # app-config.yaml
    scaffolder:
+     # GitHub configuration
+     github:
+       token: ${GITHUB_TOKEN}
+       visibility: public # or private
+       domain: github.com
+
+     # Cloud provider credentials
      azure:
        credentials:
          clientId: ${AZURE_CLIENT_ID}
@@ -38,9 +45,49 @@ This repository contains a collection of Terraform templates for use with Backst
        credentials:
          accessKeyId: ${AWS_ACCESS_KEY_ID}
          secretAccessKey: ${AWS_SECRET_ACCESS_KEY}
+         region: ${AWS_REGION}
      gcp:
        credentials:
          application_credentials: ${GOOGLE_APPLICATION_CREDENTIALS}
+         project_id: ${GOOGLE_PROJECT_ID}
+
+   # Terraform backend configuration
+   terraform:
+     backend:
+       # Default backend configuration
+       default:
+         type: s3 # or azurerm, gcs
+         config:
+           bucket: ${TERRAFORM_STATE_BUCKET}
+           region: ${AWS_REGION}
+           key: terraform.tfstate
+           encrypt: true
+
+       # Provider-specific backends
+       providers:
+         aws:
+           type: s3
+           config:
+             bucket: ${AWS_TERRAFORM_BUCKET}
+             region: ${AWS_REGION}
+         azure:
+           type: azurerm
+           config:
+             storage_account_name: ${AZURE_STORAGE_ACCOUNT}
+             container_name: ${AZURE_CONTAINER_NAME}
+         gcp:
+           type: gcs
+           config:
+             bucket: ${GCP_TERRAFORM_BUCKET}
+
+   # Authentication configuration
+   auth:
+     environment: production
+     providers:
+       github:
+         development:
+           clientId: ${AUTH_GITHUB_CLIENT_ID}
+           clientSecret: ${AUTH_GITHUB_CLIENT_SECRET}
    ```
 
 3. **Enable Required Backstage Plugins**:
@@ -368,7 +415,6 @@ scaffolder:
       config:
         bucket: your-terraform-state-bucket
         region: us-west-2
-        key: 'terraform.tfstate'
 ```
 
 ### 7. Add Template Validation (Optional)
