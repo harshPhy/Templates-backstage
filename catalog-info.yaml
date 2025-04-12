@@ -37,3 +37,6 @@ spec:
     - ./templates/gcp/vertex-pipeline/template.yaml
     - ./templates/gcp/kubeflow-pipeline/template.yaml
     - ./templates/gcp/dataflow-pipeline/template.yaml
+
+    # RDS templates
+    - ./templates/rds/template.yaml

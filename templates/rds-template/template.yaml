@@ -1,0 +1,195 @@
+apiVersion: scaffolder.backstage.io/v1beta3
+kind: Template
+metadata:
+  name: terraform-aws-rds
+  title: AWS RDS PostgreSQL Module
+  description: Create an AWS RDS PostgreSQL instance using Terraform
+  tags:
+    - terraform
+    - aws
+    - rds
+    - postgres
+    - database
+spec:
+  owner: infrastructure-team
+  type: infrastructure
+  templater: v1beta3
+
+  parameters:
+    - title: Basic Information
+      required: ['name', 'environment']
+      properties:
+        name:
+          title: Name
+          type: string
+          description: Name for the RDS instance (will be suffixed with environment)
+          ui:autofocus: true
+          pattern: '^[a-z0-9-]+$'
+          minLength: 3
+          maxLength: 63
+
+        description:
+          title: Description
+          type: string
+          description: Description for this RDS deployment
+          maxLength: 256
+          default: 'PostgreSQL RDS instance deployed via Backstage'
+
+        environment:
+          title: Environment
+          type: string
+          description: Deployment Environment
+          enum:
+            - dev
+            - stage
+            - prod
+            - qa
+          default: dev
+
+    - title: Database Configuration
+      required:
+        ['instance_class', 'engine_version', 'allocated_storage', 'db_name']
+      properties:
+        engine_version:
+          title: PostgreSQL Version
+          type: string
+          description: Version of PostgreSQL to deploy
+          enum:
+            - '15.4'
+            - '14.10'
+            - '13.13'
+            - '12.17'
+            - '11.21'
+          default: '15.4'
+
+        instance_class:
+          title: Instance Class
+          type: string
+          description: RDS instance class
+          enum:
+            - 'db.t3.micro'
+            - 'db.t3.small'
+            - 'db.t3.medium'
+            - 'db.t3.large'
+            - 'db.r5.large'
+            - 'db.r5.xlarge'
+          default: 'db.t3.micro'
+
+        allocated_storage:
+          title: Storage (GB)
+          type: number
+          description: Allocated storage in GB
+          default: 20
+          minimum: 20
+          maximum: 1000
+
+        storage_type:
+          title: Storage Type
+          type: string
+          description: Type of storage for the RDS instance
+          enum:
+            - 'gp2'
+            - 'gp3'
+            - 'io1'
+          default: 'gp2'
+
+        db_name:
+          title: Database Name
+          type: string
+          description: Name of the initial database to create
+          pattern: '^[a-zA-Z][a-zA-Z0-9_]*$'
+          default: 'postgres'
+
+        username:
+          title: Master Username
+          type: string
+          description: Username for the master user
+          pattern: '^[a-zA-Z][a-zA-Z0-9_]*$'
+          default: 'postgres'
+
+        parameter_group_name:
+          title: Parameter Group
+          type: string
+          description: Parameter group name
+          default: 'default.postgres15'
+
+    - title: Availability & Backup
+      properties:
+        multi_az:
+          title: Multi-AZ Deployment
+          type: boolean
+          description: Whether to enable Multi-AZ deployment
+          default: false
+
+        publicly_accessible:
+          title: Publicly Accessible
+          type: boolean
+          description: Whether the database should be publicly accessible
+          default: false
+
+        backup_retention_period:
+          title: Backup Retention (days)
+          type: number
+          description: Number of days to retain backups
+          default: 7
+          minimum: 0
+          maximum: 35
+
+    - title: Repository Options
+      required: ['repoUrl']
+      properties:
+        repoUrl:
+          title: Repository Location
+          type: string
+          ui:field: RepoUrlPicker
+          ui:options:
+            allowedHosts:
+              - github.com
+
+  steps:
+    - id: template
+      name: Fetch Template
+      action: fetch:template
+      input:
+        url: ./skeleton
+        values:
+          name: ${{ parameters.name }}
+          description: ${{ parameters.description }}
+          environment: ${{ parameters.environment }}
+          engine_version: ${{ parameters.engine_version }}
+          instance_class: ${{ parameters.instance_class }}
+          allocated_storage: ${{ parameters.allocated_storage }}
+          storage_type: ${{ parameters.storage_type }}
+          db_name: ${{ parameters.db_name }}
+          username: ${{ parameters.username }}
+          parameter_group_name: ${{ parameters.parameter_group_name }}
+          multi_az: ${{ parameters.multi_az }}
+          publicly_accessible: ${{ parameters.publicly_accessible }}
+          backup_retention_period: ${{ parameters.backup_retention_period }}
+
+    - id: publish
+      name: Publish to GitHub
+      action: publish:github
+      input:
+        allowedHosts: ['github.com']
+        description: ${{ parameters.description }}
+        repoUrl: ${{ parameters.repoUrl }}
+        defaultBranch: main
+        repoVisibility: private
+        sourcePath: ${{ steps.template.output.path }}
+
+    - id: register
+      name: Register Component
+      action: catalog:register
+      input:
+        repoContentsUrl: ${{ steps.publish.output.repoContentsUrl }}
+        catalogInfoPath: '/catalog-info.yaml'
+
+  output:
+    links:
+      - title: Repository
+        url: ${{ steps.publish.output.remoteUrl }}
+      - title: Open in GitHub
+        url: ${{ steps.publish.output.remoteUrl }}
+      - title: Open in Backstage
+        url: /catalog/default/component/${{ parameters.name }}

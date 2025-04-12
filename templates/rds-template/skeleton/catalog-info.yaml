@@ -1,0 +1,23 @@
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: { { values.name } }
+  description: { { values.description } }
+  annotations:
+    github.com/project-slug: ${{ repo.owner + '/' + repo.repo }}
+    backstage.io/techdocs-ref: dir:.
+  tags:
+    - terraform
+    - aws
+    - rds
+    - postgres
+    - database
+spec:
+  type: infrastructure
+  owner: infrastructure-team
+  lifecycle: production
+  dependsOn:
+    - resource:aws/rds
+  system: infrastructure
+  providesApis:
+    - postgresql
