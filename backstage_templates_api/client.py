@@ -75,8 +75,8 @@ class BackstageTemplatesClient:
             base_url: Base URL of the API. Defaults to environment variable.
             api_token: Optional API token for authentication.
         """
-        self.base_url = "http://localhost:8000"
-        self.api_token = os.getenv("api_token")
+        self.base_url = base_url or os.getenv("BACKSTAGE_TEMPLATES_API_URL", "http://localhost:8000")
+        self.api_token = api_token or os.getenv("BACKSTAGE_TEMPLATES_API_TOKEN", "development")
         self.client = httpx.AsyncClient(base_url=self.base_url)
         
         # Set authorization header if token is provided
@@ -269,8 +269,8 @@ class BackstageTemplatesClientSync:
 
     def __init__(self, base_url: str = None, api_token: Optional[str] = None):
         import asyncio
-        self.base_url = "http://localhost:8000"
-        self.api_token = os.getenv("api_token")
+        self.base_url = base_url or os.getenv("BACKSTAGE_TEMPLATES_API_URL", "http://localhost:8000")
+        self.api_token = api_token or os.getenv("BACKSTAGE_TEMPLATES_API_TOKEN", "development")
         self._async_client = None
         self._loop = asyncio.new_event_loop()
         
