@@ -112,7 +112,7 @@ async def get_backstage_client():
     headers = {}
     if auth_token:
         logger.info("Using authentication token for Backstage API")
-        headers["Authorization"] = f"Bearer {auth_token}"
+        headers["Authorization"] = f"Bearer eyJ0eXAiOiJ2bmQuYmFja3N0YWdlLnVzZXIiLCJhbGciOiJFUzI1NiIsImtpZCI6ImQzZTdjNDdlLThlMDAtNDM2Mi04ZGRhLTYwM2UzY2M0NTc3ZSJ9.eyJpc3MiOiJodHRwOi8vbG9jYWxob3N0OjcwMDcvYXBpL2F1dGgiLCJzdWIiOiJ1c2VyOmRlZmF1bHQvaGFyc2hwaHkiLCJlbnQiOlsidXNlcjpkZWZhdWx0L2hhcnNocGh5IiwiZ3JvdXA6ZGVmYXVsdC9ndWVzdHMiXSwiYXVkIjoiYmFja3N0YWdlIiwiaWF0IjoxNzQ0NDY3OTEzLCJleHAiOjE3NDQ0NzE1MTMsInVpcCI6InAxUDRUeXZ2TE9TdU1pbk83R0dMSDFjbVFGMklLQ002TnFWd1RjcnhLb2RrUkpnd2UzMWRaYkhZQkF4dWg0dnprYlhLWUVDMS14X3ZJcXpKVFBMcVZRIn0.no8Ej2IQa78B35K1Tcuc9kfWmxQL3E82yJWBxKGYtopK-F8mnsOEib5ZUeScBa20sRSWDe1pFIYKWsu3QOSxNg"
     else:
         logger.warning("No authentication token provided for Backstage API. Requests may fail with 401 Unauthorized.")
     
@@ -353,6 +353,41 @@ async def get_template(
     except Exception as e:
         logger.error(f"Unexpected error: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Failed to retrieve template: {str(e)}")
+
+@app.get("/api-source", tags=["Health"])
+async def get_api_source():
+    """
+    Return information about which data source is being used (Backstage API or local files)
+    """
+    try:
+        async with httpx.AsyncClient() as client:
+            headers = {
+                "Authorization": f"Bearer eyJ0eXAiOiJ2bmQuYmFja3N0YWdlLnVzZXIiLCJhbGciOiJFUzI1NiIsImtpZCI6ImQzZTdjNDdlLThlMDAtNDM2Mi04ZGRhLTYwM2UzY2M0NTc3ZSJ9.eyJpc3MiOiJodHRwOi8vbG9jYWxob3N0OjcwMDcvYXBpL2F1dGgiLCJzdWIiOiJ1c2VyOmRlZmF1bHQvaGFyc2hwaHkiLCJlbnQiOlsidXNlcjpkZWZhdWx0L2hhcnNocGh5IiwiZ3JvdXA6ZGVmYXVsdC9ndWVzdHMiXSwiYXVkIjoiYmFja3N0YWdlIiwiaWF0IjoxNzQ0NDY3OTEzLCJleHAiOjE3NDQ0NzE1MTMsInVpcCI6InAxUDRUeXZ2TE9TdU1pbk83R0dMSDFjbVFGMklLQ002TnFWd1RjcnhLb2RrUkpnd2UzMWRaYkhZQkF4dWg0dnprYlhLWUVDMS14X3ZJcXpKVFBMcVZRIn0.no8Ej2IQa78B35K1Tcuc9kfWmxQL3E82yJWBxKGYtopK-F8mnsOEib5ZUeScBa20sRSWDe1pFIYKWsu3QOSxNg"
+            }
+            response = await client.get(f"{settings.BACKSTAGE_API_URL}/catalog/entities", timeout=2.0, headers=headers)
+            if response.status_code == 200:
+                return {
+                    "source": "backstage_api",
+                    "status": "connected",
+                    "url": settings.BACKSTAGE_API_URL,
+                    "local_fallback_configured": os.path.exists(settings.CATALOG_FILE)
+                }
+            else:
+                return {
+                    "source": "local_files",
+                    "status": "backstage_api_error",
+                    "backstage_status_code": response.status_code,
+                    "catalog_file": settings.CATALOG_FILE,
+                    "templates_dir": settings.TEMPLATES_DIR
+                }
+    except Exception as e:
+        return {
+            "source": "local_files",
+            "status": "backstage_api_unavailable",
+            "error": str(e),
+            "catalog_file": settings.CATALOG_FILE,
+            "templates_dir": settings.TEMPLATES_DIR
+        }
 
 if __name__ == "__main__":
     import uvicorn

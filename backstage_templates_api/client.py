@@ -75,13 +75,13 @@ class BackstageTemplatesClient:
             base_url: Base URL of the API. Defaults to environment variable.
             api_token: Optional API token for authentication.
         """
-        self.base_url = base_url or os.getenv("BACKSTAGE_TEMPLATES_API_URL", "http://localhost:8000")
-        self.api_token = api_token or os.getenv("BACKSTAGE_TEMPLATES_API_TOKEN", "development")
+        self.base_url = "http://localhost:8000"
+        self.api_token = "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"
         self.client = httpx.AsyncClient(base_url=self.base_url)
         
         # Set authorization header if token is provided
         if self.api_token:
-            self.client.headers.update({"Authorization": f"Bearer {self.api_token}"})
+            self.client.headers.update({"Authorization": "Bearer eyJ0eXAiOiJ2bmQuYmFja3N0YWdlLnVzZXIiLCJhbGciOiJFUzI1NiIsImtpZCI6ImQzZTdjNDdlLThlMDAtNDM2Mi04ZGRhLTYwM2UzY2M0NTc3ZSJ9.eyJpc3MiOiJodHRwOi8vbG9jYWxob3N0OjcwMDcvYXBpL2F1dGgiLCJzdWIiOiJ1c2VyOmRlZmF1bHQvaGFyc2hwaHkiLCJlbnQiOlsidXNlcjpkZWZhdWx0L2hhcnNocGh5IiwiZ3JvdXA6ZGVmYXVsdC9ndWVzdHMiXSwiYXVkIjoiYmFja3N0YWdlIiwiaWF0IjoxNzQ0NDY3OTEzLCJleHAiOjE3NDQ0NzE1MTMsInVpcCI6InAxUDRUeXZ2TE9TdU1pbk83R0dMSDFjbVFGMklLQ002TnFWd1RjcnhLb2RrUkpnd2UzMWRaYkhZQkF4dWg0dnprYlhLWUVDMS14X3ZJcXpKVFBMcVZRIn0.no8Ej2IQa78B35K1Tcuc9kfWmxQL3E82yJWBxKGYtopK-F8mnsOEib5ZUeScBa20sRSWDe1pFIYKWsu3QOSxNg"})
 
     async def close(self):
         """Close the HTTP client session."""
@@ -269,8 +269,8 @@ class BackstageTemplatesClientSync:
 
     def __init__(self, base_url: str = None, api_token: Optional[str] = None):
         import asyncio
-        self.base_url = base_url or os.getenv("BACKSTAGE_TEMPLATES_API_URL", "http://localhost:8000")
-        self.api_token = api_token or os.getenv("BACKSTAGE_TEMPLATES_API_TOKEN", "development")
+        self.base_url = "http://localhost:8000"
+        self.api_token = "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"
         self._async_client = None
         self._loop = asyncio.new_event_loop()
         
