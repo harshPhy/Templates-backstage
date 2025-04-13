@@ -16,3 +16,4 @@ publicly_accessible: { { values.publicly_accessible | lower } }
 tags:
   Name: '{{ values.name }}'
   Environment: '{{ values.environment }}'
+  CreatedBy: 'backstage-template'

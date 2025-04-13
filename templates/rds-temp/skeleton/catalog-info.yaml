@@ -4,20 +4,22 @@ metadata:
   name: { { values.name } }
   description: { { values.description } }
   annotations:
-    github.com/project-slug: ${{ repo.owner + '/' + repo.repo }}
-    backstage.io/techdocs-ref: dir:.
+    backstage.io/managed-by-location: url:${REPOSITORY_URL}
+    backstage.io/managed-by-origin-location: url:${REPOSITORY_URL}
   tags:
     - terraform
     - aws
     - rds
     - postgres
+    - infrastructure
     - database
 spec:
   type: infrastructure
-  owner: infrastructure-team
-  lifecycle: production
+  owner: { { values.owner | default('infrastructure-team') } }
+  lifecycle: experimental
+  system: database
   dependsOn:
-    - resource:aws/rds
-  system: infrastructure
+    - resource:aws-vpc
+    - resource:aws-subnet
   providesApis:
     - postgresql

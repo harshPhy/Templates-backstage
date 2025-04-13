@@ -1,23 +1,17 @@
-variable "rds_config_file" {
-  description = "Path to the YAML file containing the RDS configuration"
-  type        = string
-  default     = "config/rds-config.yaml"
-}
-
 variable "name" {
-  description = "Name for the RDS instance (will be suffixed with environment)"
+  description = "Name for the RDS resources"
   type        = string
 }
 
 variable "description" {
-  description = "Description for this RDS deployment"
+  description = "Description of the RDS resources"
   type        = string
-  default     = "PostgreSQL RDS instance deployed via Backstage"
 }
 
 variable "environment" {
-  description = "Deployment Environment"
+  description = "Deployment Environment (dev, staging, prod)"
   type        = string
+  default     = "dev"
 }
 
 variable "region" {
@@ -26,73 +20,65 @@ variable "region" {
   default     = "us-east-1"
 }
 
-variable "username" {
-  description = "Database master username"
+variable "rds_config_file" {
+  description = "Path to the YAML file containing the RDS configuration"
   type        = string
+  default     = "config/rds-config.yaml"
 }
 
-variable "password" {
-  description = "Database master password"
-  type        = string
-  sensitive   = true
-}
-
-variable "vpc_id" {
-  description = "VPC ID for RDS instance"
-  type        = string
-}
-
-variable "subnets" {
-  description = "Subnet IDs for RDS instance"
-  type        = list(string)
-}
-
-variable "security_groups" {
-  description = "Security group IDs for RDS instance"
-  type        = list(string)
-}
-
+# Database Configuration
 variable "instance_class" {
   description = "RDS instance class"
   type        = string
 }
 
 variable "engine_version" {
-  description = "Version of PostgreSQL to deploy"
+  description = "PostgreSQL engine version"
   type        = string
 }
 
 variable "allocated_storage" {
-  description = "Allocated storage in GB"
+  description = "Allocated storage size in GB"
   type        = number
 }
 
 variable "storage_type" {
-  description = "Type of storage for the RDS instance"
+  description = "Type of storage (gp2, gp3, io1)"
   type        = string
   default     = "gp2"
 }
 
 variable "db_name" {
-  description = "Name of the initial database to create"
+  description = "Name of the database"
   type        = string
+}
+
+variable "username" {
+  description = "Master username for the RDS instance"
+  type        = string
+}
+
+variable "password" {
+  description = "Master password for the RDS instance"
+  type        = string
+  sensitive   = true
 }
 
 variable "parameter_group_name" {
   description = "Parameter group name"
   type        = string
-  default     = "default.postgres15"
 }
 
+# Availability and Backup
 variable "multi_az" {
   description = "Whether to enable Multi-AZ deployment"
-  type        = boolean
+  type        = bool
   default     = false
 }
 
 variable "publicly_accessible" {
   description = "Whether the database should be publicly accessible"
-  type        = boolean
+  type        = bool
   default     = false
 }
 
@@ -100,4 +86,20 @@ variable "backup_retention_period" {
   description = "Number of days to retain backups"
   type        = number
   default     = 7
+}
+
+# Network Configuration
+variable "vpc_id" {
+  description = "VPC ID where the RDS instance will be deployed"
+  type        = string
+}
+
+variable "subnets" {
+  description = "List of subnet IDs where the RDS instance will be deployed"
+  type        = list(string)
+}
+
+variable "security_groups" {
+  description = "List of security group IDs for the RDS instance"
+  type        = list(string)
 } 
