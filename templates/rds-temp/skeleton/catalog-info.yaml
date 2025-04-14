@@ -15,7 +15,7 @@ metadata:
     - database
 spec:
   type: infrastructure
-  owner: '{{ values.owner | default('infrastructure-team') }}'
+  owner: '{{ values.owner | default("infrastructure-team") }}'
   lifecycle: experimental
   system: database
   dependsOn:
