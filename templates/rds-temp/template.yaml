@@ -167,9 +167,7 @@ spec:
       name: Fetch Template
       action: fetch:template
       input:
-        url: https://github.com/harshPhy/Templates-backstage/archive/refs/heads/main.zip
-        targetPath: Templates-backstage-main/templates/rds-temp/skeleton
-
+        url: ./skeleton
         values:
           name: ${{ parameters.name }}
           db_name: ${{ parameters.db_name }}
