@@ -76,12 +76,12 @@ class BackstageTemplatesClient:
             api_token: Optional API token for authentication.
         """
         self.base_url = "http://localhost:8000"
-        self.api_token = "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"
+        self.api_token = "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"
         self.client = httpx.AsyncClient(base_url=self.base_url)
-        
+        token = "eyJ0eXAiOiJ2bmQuYmFja3N0YWdlLnVzZXIiLCJhbGciOiJFUzI1NiIsImtpZCI6IjFiZjMxZjMxLTQyZjktNDMxZS1hZjMxLTQyZjktNDMxZS1hZjMxIn0.eyJpc3MiOiJodHRwOi8vbG9jYWxob3N0OjcwMDcvYXBpL2F1dGgiLCJzdWIiOiJ1c2VyOmRlZmF1bHQvaGFyc2hwaHkiLCJlbnQiOlsidXNlcjpkZWZhdWx0L2hhcnNocGh5IiwiZ3JvdXA6ZGVmYXVsdC9ndWVzdHMiXSwiYXVkIjoiYmFja3N0YWdlIiwiaWF0IjoxNzQ0NjA0MjIyLCJleHAiOjE3NDQ2MDc4MjIsInVpcCI6InFlaVdkQjRuOW9nalRnLVlRbUktc1cySk9TWWQ3QzhNRm9UejNXLWJNMVJPNWdMNmo1bFF6SzhSTWQwWnpLa3FmOHBOS3poeVIwQlhTbTlHTTJaVHZRIn0.IegAgs4CR9gQ-rAx_VYHBhjU-5Im0vf1zF7I-kQJitnFh5FpQtkxdODlLS-vpTkJ4O8aCf_UkLO6ecSotHZrXQ"
         # Set authorization header if token is provided
         if self.api_token:
-            self.client.headers.update({"Authorization": "Bearer eyJ0eXAiOiJ2bmQuYmFja3N0YWdlLnVzZXIiLCJhbGciOiJFUzI1NiIsImtpZCI6ImQzZTdjNDdlLThlMDAtNDM2Mi04ZGRhLTYwM2UzY2M0NTc3ZSJ9.eyJpc3MiOiJodHRwOi8vbG9jYWxob3N0OjcwMDcvYXBpL2F1dGgiLCJzdWIiOiJ1c2VyOmRlZmF1bHQvaGFyc2hwaHkiLCJlbnQiOlsidXNlcjpkZWZhdWx0L2hhcnNocGh5IiwiZ3JvdXA6ZGVmYXVsdC9ndWVzdHMiXSwiYXVkIjoiYmFja3N0YWdlIiwiaWF0IjoxNzQ0NDY3OTEzLCJleHAiOjE3NDQ0NzE1MTMsInVpcCI6InAxUDRUeXZ2TE9TdU1pbk83R0dMSDFjbVFGMklLQ002TnFWd1RjcnhLb2RrUkpnd2UzMWRaYkhZQkF4dWg0dnprYlhLWUVDMS14X3ZJcXpKVFBMcVZRIn0.no8Ej2IQa78B35K1Tcuc9kfWmxQL3E82yJWBxKGYtopK-F8mnsOEib5ZUeScBa20sRSWDe1pFIYKWsu3QOSxNg"})
+            self.client.headers.update({"Authorization": f"Bearer {token}"})
 
     async def close(self):
         """Close the HTTP client session."""
@@ -270,7 +270,7 @@ class BackstageTemplatesClientSync:
     def __init__(self, base_url: str = None, api_token: Optional[str] = None):
         import asyncio
         self.base_url = "http://localhost:8000"
-        self.api_token = "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"
+        self.api_token = "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"
         self._async_client = None
         self._loop = asyncio.new_event_loop()
         

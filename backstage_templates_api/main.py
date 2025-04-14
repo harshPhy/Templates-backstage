@@ -11,6 +11,8 @@ import logging
 import sys
 
 # Configure logging
+token = "eyJ0eXAiOiJ2bmQuYmFja3N0YWdlLnVzZXIiLCJhbGciOiJFUzI1NiIsImtpZCI6IjEyY2Y1ZTc5LTdkYmEtNDYyZS1hNDIzLTRhMDdhODA4MjFmNyJ9.eyJpc3MiOiJodHRwOi8vbG9jYWxob3N0OjcwMDcvYXBpL2F1dGgiLCJzdWIiOiJ1c2VyOmRlZmF1bHQvaGFyc2hwaHkiLCJlbnQiOlsidXNlcjpkZWZhdWx0L2hhcnNocGh5IiwiZ3JvdXA6ZGVmYXVsdC9ndWVzdHMiXSwiYXVkIjoiYmFja3N0YWdlIiwiaWF0IjoxNzQ0NjA0MjIyLCJleHAiOjE3NDQ2MDc4MjIsInVpcCI6InFlaVdkQjRuOW9nalRnLVlRbUktc1cySk9TWWQ3QzhNRm9UejNXLWJNMVJPNWdMNmo1bFF6SzhSTWQwWnpLa3FmOHBOS3poeVIwQlhTbTlHTTJaVHZRIn0.IegAgs4CR9gQ-rAx_VYHBhjU-5Im0vf1zF7I-kQJitnFh5FpQtkxdODlLS-vpTkJ4O8aCf_UkLO6ecSotHZrXQ"
+    
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
@@ -112,7 +114,7 @@ async def get_backstage_client():
     headers = {}
     if auth_token:
         logger.info("Using authentication token for Backstage API")
-        headers["Authorization"] = f"Bearer eyJ0eXAiOiJ2bmQuYmFja3N0YWdlLnVzZXIiLCJhbGciOiJFUzI1NiIsImtpZCI6ImQzZTdjNDdlLThlMDAtNDM2Mi04ZGRhLTYwM2UzY2M0NTc3ZSJ9.eyJpc3MiOiJodHRwOi8vbG9jYWxob3N0OjcwMDcvYXBpL2F1dGgiLCJzdWIiOiJ1c2VyOmRlZmF1bHQvaGFyc2hwaHkiLCJlbnQiOlsidXNlcjpkZWZhdWx0L2hhcnNocGh5IiwiZ3JvdXA6ZGVmYXVsdC9ndWVzdHMiXSwiYXVkIjoiYmFja3N0YWdlIiwiaWF0IjoxNzQ0NDY3OTEzLCJleHAiOjE3NDQ0NzE1MTMsInVpcCI6InAxUDRUeXZ2TE9TdU1pbk83R0dMSDFjbVFGMklLQ002TnFWd1RjcnhLb2RrUkpnd2UzMWRaYkhZQkF4dWg0dnprYlhLWUVDMS14X3ZJcXpKVFBMcVZRIn0.no8Ej2IQa78B35K1Tcuc9kfWmxQL3E82yJWBxKGYtopK-F8mnsOEib5ZUeScBa20sRSWDe1pFIYKWsu3QOSxNg"
+        headers["Authorization"] = f"Bearer eyJ0eXAiOiJ2bmQuYmFja3N0YWdlLnVzZXIiLCJhbGciOiJFUzI1NiIsImtpZCI6ImFiN2EyZDIyLTQwNDItNGNkMC04NzQzLWE0NTYxOTU4OWNiNiJ9.eyJpc3MiOiJodHRwOi8vbG9jYWxob3N0OjcwMDcvYXBpL2F1dGgiLCJzdWIiOiJ1c2VyOmRlZmF1bHQvaGFyc2hwaHkiLCJlbnQiOlsidXNlcjpkZWZhdWx0L2hhcnNocGh5IiwiZ3JvdXA6ZGVmYXVsdC9ndWVzdHMiXSwiYXVkIjoiYmFja3N0YWdlIiwiaWF0IjoxNzQ0NTQ5MTQ2LCJleHAiOjE3NDQ1NTI3NDYsInVpcCI6IkxLMTFmd1VZZnJ4a0FTcF85dVZBRUNmcVZlOVJhTGhZNzZtTHBfQVhnUWdFQmFlUV83b1Z4Y3I0NmRRb2JGMlprVDBOZ1gwd2VsMnpPVkdVNEdxRnVBIn0.JR_Bnk-VcfUsgiIM2FhllBGoCv969SWMmbHT5e4dXxN0K34NDRkufEx2kj1TNBqdYB8yOffD7XIV75gbl9jgDA"
     else:
         logger.warning("No authentication token provided for Backstage API. Requests may fail with 401 Unauthorized.")
     
@@ -359,10 +361,11 @@ async def get_api_source():
     """
     Return information about which data source is being used (Backstage API or local files)
     """
+
     try:
         async with httpx.AsyncClient() as client:
             headers = {
-                "Authorization": f"Bearer eyJ0eXAiOiJ2bmQuYmFja3N0YWdlLnVzZXIiLCJhbGciOiJFUzI1NiIsImtpZCI6ImQzZTdjNDdlLThlMDAtNDM2Mi04ZGRhLTYwM2UzY2M0NTc3ZSJ9.eyJpc3MiOiJodHRwOi8vbG9jYWxob3N0OjcwMDcvYXBpL2F1dGgiLCJzdWIiOiJ1c2VyOmRlZmF1bHQvaGFyc2hwaHkiLCJlbnQiOlsidXNlcjpkZWZhdWx0L2hhcnNocGh5IiwiZ3JvdXA6ZGVmYXVsdC9ndWVzdHMiXSwiYXVkIjoiYmFja3N0YWdlIiwiaWF0IjoxNzQ0NDY3OTEzLCJleHAiOjE3NDQ0NzE1MTMsInVpcCI6InAxUDRUeXZ2TE9TdU1pbk83R0dMSDFjbVFGMklLQ002TnFWd1RjcnhLb2RrUkpnd2UzMWRaYkhZQkF4dWg0dnprYlhLWUVDMS14X3ZJcXpKVFBMcVZRIn0.no8Ej2IQa78B35K1Tcuc9kfWmxQL3E82yJWBxKGYtopK-F8mnsOEib5ZUeScBa20sRSWDe1pFIYKWsu3QOSxNg"
+                "Authorization": f"Bearer {token}"
             }
             response = await client.get(f"{settings.BACKSTAGE_API_URL}/catalog/entities", timeout=2.0, headers=headers)
             if response.status_code == 200:

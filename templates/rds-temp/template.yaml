@@ -167,7 +167,7 @@ spec:
       name: Fetch Template
       action: fetch:template
       input:
-        url: ./skeleton
+        url: ../skeleton
         values:
           name: ${{ parameters.name }}
           db_name: ${{ parameters.db_name }}
