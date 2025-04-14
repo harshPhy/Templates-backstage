@@ -39,4 +39,4 @@ spec:
     - ./templates/gcp/dataflow-pipeline/template.yaml
 
     # RDS templates
-    - ./templates/rds-temp/template.yaml
+    # - ./templates/rds-temp/template.yaml
