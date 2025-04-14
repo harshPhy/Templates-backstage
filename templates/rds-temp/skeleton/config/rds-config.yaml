@@ -4,13 +4,13 @@ identifier: '{{ values.name }}'
 engine: 'postgres'
 engine_version: '{{ values.engine_version }}'
 instance_class: '{{ values.instance_class }}'
-allocated_storage: { { values.allocated_storage } }
+allocated_storage: '{{ values.allocated_storage }}'
 storage_type: '{{ values.storage_type }}'
 db_name: '{{ values.db_name }}'
 parameter_group_name: '{{ values.parameter_group_name }}'
-backup_retention_period: { { values.backup_retention_period } }
-multi_az: { { values.multi_az | lower } }
-publicly_accessible: { { values.publicly_accessible | lower } }
+backup_retention_period: '{{ values.backup_retention_period }}'
+multi_az: '{{ values.multi_az | lower }}'
+publicly_accessible: '{{ values.publicly_accessible | lower }}'
 
 # Tags
 tags:
