@@ -168,7 +168,6 @@ spec:
       action: fetch:template
       input:
         url: ./skeleton
-        targetPath: Templates-backstage-main/templates/rds-temp/skeleton
         values:
           name: ${{ parameters.name }}
           db_name: ${{ parameters.db_name }}
