@@ -165,7 +165,11 @@ spec:
   steps:
     - id: template
       name: Fetch Template
-      action: fetch:template
+      action:
+        fetch:
+          template:
+            url: https://github.com/harshPhy/Templates-backstage/archive/main.zip
+            targetPath: Templates-backstage-main/templates/rds-temp/skeleton
       input:
         url: ./skeleton
         values:
