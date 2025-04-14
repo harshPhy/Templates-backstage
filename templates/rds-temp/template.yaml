@@ -14,7 +14,7 @@ metadata:
 spec:
   owner: infrastructure-team
   type: infrastructure
-  templater: v1beta3
+  templater: nunjucks
 
   parameters:
     - title: Basic Database Information
