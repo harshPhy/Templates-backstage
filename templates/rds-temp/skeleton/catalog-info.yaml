@@ -1,11 +1,11 @@
 apiVersion: backstage.io/v1alpha1
 kind: Component
 metadata:
-  name: aws-rds-template
+  name: ${{ values.name }}
   description: ${{ values.description }}
   annotations:
-    backstage.io/managed-by-location: url:${REPOSITORY_URL}
-    backstage.io/managed-by-origin-location: url:${REPOSITORY_URL}
+    backstage.io/managed-by-location: url:${values.REPOSITORY_URL}
+    backstage.io/managed-by-origin-location: url:${values.REPOSITORY_URL}
   tags:
     - terraform
     - aws

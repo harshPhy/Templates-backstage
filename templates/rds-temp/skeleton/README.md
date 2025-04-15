@@ -12,11 +12,11 @@ The RDS instance is configured as follows:
 - **Environment**: ${{ values.environment }}
 - **Database Engine**: PostgreSQL ${{ values.engine_version }}
 - **Instance Class**: ${{ values.instance_class }}
-- **Storage**: ${{ values.allocated_storage }}GB ({{ values.storage_type }})
-- **Database Name**: {{ values.db_name }}
-- **Multi-AZ**: {{ values.multi_az }}
-- **Publicly Accessible**: {{ values.publicly_accessible }}
-- **Backup Retention Period**: {{ values.backup_retention_period }} days
+- **Storage**: ${{ values.allocated_storage }}GB (${{ values.storage_type }})
+- **Database Name**: ${{ values.db_name }}
+- **Multi-AZ**: ${{ values.multi_az }}
+- **Publicly Accessible**: ${{ values.publicly_accessible }}
+- **Backup Retention Period**: ${{ values.backup_retention_period }} days
 
 ## Prerequisites
 
