@@ -4,7 +4,7 @@ metadata:
   name: ${{ values.name }}
   description: ${{ values.description }}
   annotations:
-    backstage.io/managed-by-location: https://github.com/${{ values.owner }}/${{ values.repo_slug }}
+    backstage.io/managed-by-location: ${{ values.repo_slug }}
     backstage.io/managed-by-origin-location: https://github.com/${{ values.owner }}/${{ values.repo_slug }}
   tags:
     - terraform
