@@ -13,8 +13,6 @@ crash.*.log
 *.tfvars
 *.tfvars.json
 
-# Except the templated one, which is needed for the template
-!terraform.tfvars.j2
 
 # Ignore override files as they're usually used for local settings
 override.tf
