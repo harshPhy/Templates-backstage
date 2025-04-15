@@ -4,8 +4,8 @@ metadata:
   name: ${{ values.name }}
   description: ${{ values.description }}
   annotations:
-    backstage.io/managed-by-location: url:${{values.repoUrl}}
-    backstage.io/managed-by-origin-location: url:${{values.repoUrl}}
+    backstage.io/managed-by-location: ${{ values.repoUrl }}
+    backstage.io/managed-by-origin-location: ${{ values.repoUrl }}
   tags:
     - terraform
     - aws
