@@ -110,49 +110,52 @@ spec:
           default: 'postgres'
 
     - title: Backup and Availability
+      required: ['backup_retention_period', 'multi_az', 'publicly_accessible']
       properties:
         backup_retention_period:
           title: Backup Retention Period (days)
           type: number
-          description: The number of days for which automated backups are retained
+          description: Number of days for automated backup retention
           default: 7
           minimum: 0
           maximum: 35
         multi_az:
           title: Multi-AZ Deployment
           type: boolean
-          description: Whether to enable Multi-AZ deployment for high availability
+          description: Enable high availability
           default: false
         publicly_accessible:
           title: Publicly Accessible
           type: boolean
-          description: Whether the database should be publicly accessible
+          description: Expose database to public internet
           default: false
 
     - title: Network Configuration
+      required: ['vpc_id', 'subnets', 'security_groups', 'region']
       properties:
         vpc_id:
           title: VPC ID
           type: string
-          description: ID of the VPC where the RDS instance will be deployed
+          description: VPC where the RDS instance will be deployed
           default: 'vpc-example'
         subnets:
           title: Subnet IDs
           type: array
-          description: List of subnet IDs where the RDS instance will be deployed
+          description: Subnets for the RDS instance
           default: ['subnet-example1', 'subnet-example2']
         security_groups:
           title: Security Group IDs
           type: array
-          description: List of security group IDs for the RDS instance
+          description: Security groups for the RDS instance
           default: ['sg-example']
         region:
           title: AWS Region
           type: string
-          description: AWS region where the RDS instance will be deployed
+          description: AWS deployment region
           default: 'us-east-1'
 
     - title: Deployment Information
+      required: ['repoUrl']
       properties:
         repoUrl:
           title: Repository URL
