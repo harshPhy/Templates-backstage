@@ -189,6 +189,8 @@ spec:
           subnets: ${{ parameters.subnets }}
           security_groups: ${{ parameters.security_groups }}
           region: ${{ parameters.region }}
+          repo_slug: ${{ parameters.repoUrl | parseRepoUrl | pick('repo') }}
+          owner: ${{ parameters.repoUrl | parseRepoUrl | pick('owner') }}
 
     - id: publish
       name: Publish to GitHub
