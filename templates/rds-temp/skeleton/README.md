@@ -1,4 +1,4 @@
-${{ values.name }} - AWS RDS PostgreSQL Module
+# ${{ values.name }} - AWS RDS PostgreSQL Module
 
 ${{ values.description }}
 
