@@ -1,6 +1,6 @@
-# {{ values.name }} - AWS RDS PostgreSQL Module
+${{ values.name }} - AWS RDS PostgreSQL Module
 
-{{ values.description }}
+${{ values.description }}
 
 This Terraform module creates an AWS RDS PostgreSQL instance based on the configuration provided.
 
@@ -8,11 +8,11 @@ This Terraform module creates an AWS RDS PostgreSQL instance based on the config
 
 The RDS instance is configured as follows:
 
-- **Name**: {{ values.name }}
-- **Environment**: {{ values.environment }}
-- **Database Engine**: PostgreSQL {{ values.engine_version }}
-- **Instance Class**: {{ values.instance_class }}
-- **Storage**: {{ values.allocated_storage }}GB ({{ values.storage_type }})
+- **Name**: ${{ values.name }}
+- **Environment**: ${{ values.environment }}
+- **Database Engine**: PostgreSQL ${{ values.engine_version }}
+- **Instance Class**: ${{ values.instance_class }}
+- **Storage**: ${{ values.allocated_storage }}GB ({{ values.storage_type }})
 - **Database Name**: {{ values.db_name }}
 - **Multi-AZ**: {{ values.multi_az }}
 - **Publicly Accessible**: {{ values.publicly_accessible }}
