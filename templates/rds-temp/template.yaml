@@ -12,7 +12,7 @@ metadata:
     - postgres
     - infrastructure
 spec:
-  owner: ${{ values.owner | default("infrastructure-team") }}
+  owner: harshPhy
   type: infrastructure
   templater: nunjucks
 
