@@ -1,148 +1,130 @@
 # Backstage Templates API
 
-A FastAPI application that serves as an API for Backstage Templates, allowing you to query and filter templates based on metadata.
+A Python-based API for interacting with Backstage Software Templates, providing a flexible and extensible way to manage and deploy templates across different environments.
 
 ## Features
 
-- Fetch templates from a Backstage instance or local files
-- Filter templates by cloud provider (AWS, Azure, GCP)
-- Filter templates by type (infrastructure, application, etc.)
-- Filter templates by tags
-- Search templates by name, description, and title
-- List all available tags, owners, and cloud providers
-- Automatic fallback to local files if Backstage API is unavailable
-
-## Requirements
-
-- Python 3.8+
-- FastAPI
-- Uvicorn
-- HTTPX
-- PyYAML
-- Pydantic
+- **Multiple Client Support**: Supports both Backstage and Local template clients
+- **S3 Integration**: Built-in support for downloading template results from S3
+- **Flexible Configuration**: Environment-based configuration with sensible defaults
+- **Type Safety**: Full type hints and validation
+- **Error Handling**: Comprehensive error handling and logging
 
 ## Installation
 
-1. Clone the repository
-2. Install dependencies:
-
 ```bash
-cd backstage_templates_api
 pip install -r requirements.txt
 ```
 
 ## Configuration
 
-The API can be configured using environment variables:
+The API can be configured through environment variables or a configuration file:
+
+### Environment Variables
 
 ```bash
-# API Configuration
-export BACKSTAGE_API_URL=http://backstage:7007/api
-export TEMPLATES_DIR=./templates
-export CATALOG_FILE=./catalog-info.yaml
+# Backstage Configuration
+BACKSTAGE_URL=https://backstage.example.com/api
+BACKSTAGE_TOKEN=your-token
 
-# For client
-export BACKSTAGE_TEMPLATES_API_URL=http://localhost:8000
-export BACKSTAGE_TEMPLATES_API_TOKEN=your-api-token  # Optional
+# S3 Configuration
+TEMPLATE_S3_BUCKET=my-templates-bucket
+BACKSTAGE_AWS_ACCESS_KEY=your-access-key
+BACKSTAGE_AWS_SECRET_KEY=your-secret-key
+BACKSTAGE_AWS_REGION=us-west-2
+
+# Local Configuration
+LOCAL_TEMPLATES_DIR=/path/to/templates
+LOCAL_CATALOG_FILE=catalog-info.yaml
 ```
 
-## Running the API
-
-```bash
-cd backstage_templates_api
-uvicorn main:app --reload --host 0.0.0.0 --port 8000
-```
-
-## API Documentation
-
-Once the API is running, you can access the Swagger UI at:
-
-```
-http://localhost:8000/docs
-```
-
-And the ReDoc documentation at:
-
-```
-http://localhost:8000/redoc
-```
-
-## API Endpoints
-
-### Templates
-
-- `GET /templates` - List all templates with optional filtering
-- `GET /templates/{template_name}` - Get a specific template by name
-- `GET /templates/filtered/cloud-provider/{provider}` - Get templates filtered by cloud provider
-- `GET /templates/filtered/type/{type}` - Get templates filtered by template type
-- `GET /templates/filtered/tag/{tag}` - Get templates filtered by tag
-- `GET /templates/filtered/owner/{owner}` - Get templates filtered by owner
-
-### Metadata
-
-- `GET /tags` - List all unique tags used in templates
-- `GET /owners` - List all unique owners of templates
-- `GET /cloud-providers` - List all cloud providers with available templates
-
-## Using the Python Client
-
-The project includes a Python client for interacting with the API:
+### Configuration File
 
 ```python
-# Async client
-from backstage_templates_api.client import BackstageTemplatesClient, CloudProvider
+from template_plugin.config.config import ClientsConfig
 
-async def main():
-    async with BackstageTemplatesClient() as client:
-        # List all templates
-        templates = await client.list_templates()
-        print(f"Found {templates.total_count} templates")
-
-        # Get AWS templates
-        aws_templates = await client.get_templates_by_cloud_provider(CloudProvider.AWS)
-        print(f"Found {aws_templates.total_count} AWS templates")
-
-# Synchronous client
-from backstage_templates_api.client import BackstageTemplatesClientSync, CloudProvider
-
-with BackstageTemplatesClientSync() as client:
-    # List all templates
-    templates = client.list_templates()
-    print(f"Found {templates.total_count} templates")
-
-    # Get AWS templates
-    aws_templates = client.get_templates_by_cloud_provider(CloudProvider.AWS)
-    print(f"Found {aws_templates.total_count} AWS templates")
+config = ClientsConfig(
+    backstage_enabled=True,
+    local_enabled=True,
+    default_client="backstage",
+    backstage={
+        "base_url": "https://backstage.example.com/api",
+        "auth_token": "your-token"
+    },
+    local={
+        "templates_dir": "/path/to/templates",
+        "catalog_file": "catalog-info.yaml"
+    }
+)
 ```
 
-## Integration with Backstage
+## Usage
 
-This API can be integrated with Backstage in two ways:
+### Basic Usage
 
-1. **As a proxy**: Deploy alongside Backstage and use it to query template metadata
-2. **As a standalone service**: Deploy separately and configure Backstage to use it as an external template source
+```python
+from template_plugin.template_plugin import TemplatePlugin
 
-### Backstage Integration Steps
+# Initialize the plugin
+plugin = TemplatePlugin()
 
-1. Add the API URL to your Backstage `app-config.yaml`:
+# List available templates
+templates = plugin.list_templates()
 
-```yaml
-backstage:
-  templateApi:
-    baseUrl: http://localhost:8000
+# Get template details
+template = plugin.get_template("my-template")
+
+# Get template parameters
+parameters = plugin.get_template_parameters("my-template")
+
+# Execute a template
+response = plugin.execute_template(
+    template_name="my-template",
+    parameters={
+        "name": "my-service",
+        "description": "A new service"
+    }
+)
 ```
 
-2. Configure a proxy in your Backstage instance:
+## API Reference
 
-```yaml
-proxy:
-  '/templates-api':
-    target: http://localhost:8000
-    changeOrigin: true
-    pathRewrite:
-      '^/templates-api': ''
-```
+### TemplatePlugin
+
+The main class for interacting with templates:
+
+- `__init__(config: Optional[Union[TemplatePluginConfig, ClientsConfig]] = None)`
+- `list_templates(cloud_provider: Optional[str] = None, ...) -> Dict[str, Any]`
+- `get_template(template_name: str, ...) -> Dict[str, Any]`
+- `get_template_parameters(template_name: str, ...) -> Dict[str, Any]`
+- `execute_template(template_name: str, parameters: Dict[str, Any], ...) -> TemplateTaskResponse`
+- `get_task_status(task_id: str, ...) -> Dict[str, Any]`
+
+## Error Handling
+
+The API provides comprehensive error handling through custom exceptions:
+
+- `TemplateError`: Base class for template-related errors
+- `TemplateNotFoundError`: Template not found
+- `TemplateExecutionError`: Error during template execution
+- `ClientInitializationError`: Error initializing template clients
+- `ConnectionError`: Connection-related errors
+
+## Logging
+
+The API uses Python's logging module with the following loggers:
+
+- `template-plugin`: Main plugin logger
+- `backstage-template-client`: Backstage client logger
+- `s3-client`: S3 client logger
+
+## Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Submit a pull request
 
 ## License
 
-MIT
+This project is licensed under the MIT License - see the LICENSE file for details.
