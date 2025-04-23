@@ -5,3 +5,4 @@ pydantic
 pyyaml
 typing-extensions
 python-dotenv 
+boto3

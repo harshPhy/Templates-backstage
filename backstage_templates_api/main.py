@@ -1,18 +1,21 @@
-from fastapi import FastAPI, HTTPException, Query, Depends
+"""
+Backstage Templates API
+
+This module provides a FastAPI application that serves as a REST API for interacting with
+Backstage templates. It uses the template_plugin module to handle template operations.
+"""
+
+from fastapi import FastAPI, HTTPException, Query, Depends, Path, Body
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel, Field
-from typing import List, Optional, Dict, Any
-import httpx
+from typing import List, Optional
 import os
-import yaml
-from enum import Enum
-from datetime import datetime
 import logging
 import sys
-
+from model import CloudProvider, TemplateType, TemplateList, Template, TemplateTask, TemplateTaskResponse
+# Import the template plugin
+from template_plugin import TemplatePlugin
+from template_plugin.config.config import load_config
 # Configure logging
-token = "eyJ0eXAiOiJ2bmQuYmFja3N0YWdlLnVzZXIiLCJhbGciOiJFUzI1NiIsImtpZCI6IjEyY2Y1ZTc5LTdkYmEtNDYyZS1hNDIzLTRhMDdhODA4MjFmNyJ9.eyJpc3MiOiJodHRwOi8vbG9jYWxob3N0OjcwMDcvYXBpL2F1dGgiLCJzdWIiOiJ1c2VyOmRlZmF1bHQvaGFyc2hwaHkiLCJlbnQiOlsidXNlcjpkZWZhdWx0L2hhcnNocGh5IiwiZ3JvdXA6ZGVmYXVsdC9ndWVzdHMiXSwiYXVkIjoiYmFja3N0YWdlIiwiaWF0IjoxNzQ0NjA0MjIyLCJleHAiOjE3NDQ2MDc4MjIsInVpcCI6InFlaVdkQjRuOW9nalRnLVlRbUktc1cySk9TWWQ3QzhNRm9UejNXLWJNMVJPNWdMNmo1bFF6SzhSTWQwWnpLa3FmOHBOS3poeVIwQlhTbTlHTTJaVHZRIn0.IegAgs4CR9gQ-rAx_VYHBhjU-5Im0vf1zF7I-kQJitnFh5FpQtkxdODlLS-vpTkJ4O8aCf_UkLO6ecSotHZrXQ"
-    
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
@@ -36,121 +39,46 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Configuration
-class Settings:
-    BACKSTAGE_API_URL: str = os.getenv("BACKSTAGE_API_URL", "http://localhost:7007/api")
-    TEMPLATES_DIR: str = os.getenv("TEMPLATES_DIR", "./templates")
-    CATALOG_FILE: str = os.getenv("CATALOG_FILE", "./catalog-info.yaml")
+# Load configuration from environment variables and/or .env file
+config = load_config()
 
-settings = Settings()
-auth_token = os.getenv("BACKSTAGE_AUTH_TOKEN", "eyJ0eXAiOiJ2bmQuYmFja3N0YWdlLnVzZXIiLCJhbGciOiJFUzI1NiIsImtpZCI6ImE4MDFiODY1LWUwNjktNGMyNS05YTYzLTUwNzljNzVkMGQ2OCJ9.eyJpc3MiOiJodHRwOi8vbG9jYWxob3N0OjcwMDcvYXBpL2F1dGgiLCJzdWIiOiJ1c2VyOmRlZmF1bHQvaGFyc2hwaHkiLCJlbnQiOlsidXNlcjpkZWZhdWx0L2hhcnNocGh5IiwiZ3JvdXA6ZGVmYXVsdC9ndWVzdHMiXSwiYXVkIjoiYmFja3N0YWdlIiwiaWF0IjoxNzQ0NDYyMDMwLCJleHAiOjE3NDQ0NjU2MzAsInVpcCI6InAtc1BEam85LVVkbDIyNEVhakd2VWpFdktCZ082UjdkYmVLbmVnR1dvbDZ4dzBzM056Snp2cXFTNHpCUHRfSkZuRmRPeWIxa3BoYXZBeXBsT0V3YzRBIn0.vq5wmXPn88qk5uQ_2t0XkzkMioqW09r7nMZ3rMnu5h-O49N0PAZriMBXYK7PZCuJ6wcnicjvVs26zsyOx0VaJw")
+# Override config with environment variables explicitly if needed
+if os.getenv("BACKSTAGE_AUTH_TOKEN"):
+    config.backstage.auth_token = os.getenv("BACKSTAGE_AUTH_TOKEN")
+if os.getenv("BACKSTAGE_BASE_URL"):
+    config.backstage.base_url = os.getenv("BACKSTAGE_BASE_URL")
+if os.getenv("LOCAL_TEMPLATES_DIR"):
+    config.local.templates_dir = os.getenv("LOCAL_TEMPLATES_DIR")
+if os.getenv("LOCAL_CATALOG_FILE"):
+    config.local.catalog_file = os.getenv("LOCAL_CATALOG_FILE")
+if os.getenv("BACKSTAGE_ENABLED"):
+    config.backstage_enabled = os.getenv("BACKSTAGE_ENABLED").lower() == "true"
+if os.getenv("LOCAL_ENABLED"):
+    config.local_enabled = os.getenv("LOCAL_ENABLED").lower() == "true"
+if os.getenv("DEFAULT_CLIENT"):
+    config.default_client = os.getenv("DEFAULT_CLIENT")
 
 # Log configuration at startup
 logger.info(f"Starting Backstage Templates API with configuration:")
-logger.info(f"BACKSTAGE_API_URL: {settings.BACKSTAGE_API_URL}")
-logger.info(f"TEMPLATES_DIR: {settings.TEMPLATES_DIR}")
-logger.info(f"CATALOG_FILE: {settings.CATALOG_FILE}")
+logger.info(f"BACKSTAGE_BASE_URL: {config.backstage.base_url}")
+logger.info(f"LOCAL_TEMPLATES_DIR: {config.local.templates_dir}")
+logger.info(f"LOCAL_CATALOG_FILE: {config.local.catalog_file}")
+logger.info(f"BACKSTAGE_ENABLED: {config.backstage_enabled}")
+logger.info(f"LOCAL_ENABLED: {config.local_enabled}")
+logger.info(f"DEFAULT_CLIENT: {config.default_client}")
 
-# Enums
-class CloudProvider(str, Enum):
-    AWS = "aws"
-    AZURE = "azure"
-    GCP = "gcp"
 
-class TemplateType(str, Enum):
-    INFRASTRUCTURE = "infrastructure"
-    APPLICATION = "application"
-    WEBSITE = "website"
-    LIBRARY = "library"
-    OTHER = "other"
+# Initialize the template plugin with our configuration
+template_plugin = TemplatePlugin(config)
 
-# Models
-class TemplateTag(BaseModel):
-    name: str
-    description: Optional[str] = None
-
-class TemplateMetadata(BaseModel):
-    name: str
-    title: str
-    description: Optional[str] = None
-    tags: Optional[List[str]] = None
-    annotations: Optional[Dict[str, str]] = None
-    cloud_provider: Optional[CloudProvider] = None
-
-class TemplateSpec(BaseModel):
-    owner: str
-    type: TemplateType
-    templater: Optional[str] = None
-    parameters: Optional[List[Dict[str, Any]]] = None
-
-class TemplateOutput(BaseModel):
-    links: Optional[List[Dict[str, str]]] = None
-
-class Template(BaseModel):
-    api_version: str = Field(..., alias="apiVersion")
-    kind: str
-    metadata: TemplateMetadata
-    spec: TemplateSpec
-    output: Optional[TemplateOutput] = None
-    created_at: Optional[datetime] = Field(default_factory=datetime.now)
-    updated_at: Optional[datetime] = Field(default_factory=datetime.now)
-
-    class Config:
-        allow_population_by_field_name = True
-
-class TemplateList(BaseModel):
-    items: List[Template]
-    total_count: int
-
-class ErrorResponse(BaseModel):
-    error: str
-    status_code: int
-    detail: Optional[str] = None
-
-# Helper functions
-async def get_backstage_client():
-    logger.info(f"Creating Backstage client with base URL: {settings.BACKSTAGE_API_URL}")
-    
-    headers = {}
-    if auth_token:
-        logger.info("Using authentication token for Backstage API")
-        headers["Authorization"] = f"Bearer eyJ0eXAiOiJ2bmQuYmFja3N0YWdlLnVzZXIiLCJhbGciOiJFUzI1NiIsImtpZCI6ImFiN2EyZDIyLTQwNDItNGNkMC04NzQzLWE0NTYxOTU4OWNiNiJ9.eyJpc3MiOiJodHRwOi8vbG9jYWxob3N0OjcwMDcvYXBpL2F1dGgiLCJzdWIiOiJ1c2VyOmRlZmF1bHQvaGFyc2hwaHkiLCJlbnQiOlsidXNlcjpkZWZhdWx0L2hhcnNocGh5IiwiZ3JvdXA6ZGVmYXVsdC9ndWVzdHMiXSwiYXVkIjoiYmFja3N0YWdlIiwiaWF0IjoxNzQ0NTQ5MTQ2LCJleHAiOjE3NDQ1NTI3NDYsInVpcCI6IkxLMTFmd1VZZnJ4a0FTcF85dVZBRUNmcVZlOVJhTGhZNzZtTHBfQVhnUWdFQmFlUV83b1Z4Y3I0NmRRb2JGMlprVDBOZ1gwd2VsMnpPVkdVNEdxRnVBIn0.JR_Bnk-VcfUsgiIM2FhllBGoCv969SWMmbHT5e4dXxN0K34NDRkufEx2kj1TNBqdYB8yOffD7XIV75gbl9jgDA"
-    else:
-        logger.warning("No authentication token provided for Backstage API. Requests may fail with 401 Unauthorized.")
-    
-    async with httpx.AsyncClient(
-        base_url=settings.BACKSTAGE_API_URL,
-        headers=headers
-    ) as client:
-        yield client
-
-async def load_template_from_file(file_path: str) -> Template:
-    try:
-        logger.info(f"Loading template from file: {file_path}")
-        with open(file_path, 'r') as f:
-            template_data = yaml.safe_load(f)
-            
-        # Extract cloud provider from file path or tags
-        cloud_provider = None
-        if "/aws/" in file_path:
-            cloud_provider = CloudProvider.AWS
-        elif "/azure/" in file_path:
-            cloud_provider = CloudProvider.AZURE
-        elif "/gcp/" in file_path:
-            cloud_provider = CloudProvider.GCP
-            
-        # Enhance metadata with cloud provider
-        if 'metadata' in template_data:
-            template_data['metadata']['cloud_provider'] = cloud_provider
-            
-        return Template.parse_obj(template_data)
-    except Exception as e:
-        logger.error(f"Failed to load template: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Failed to load template: {str(e)}")
+def get_template_plugin():
+    """Dependency to get the template plugin instance."""
+    return template_plugin
 
 # Routes
 @app.get("/", tags=["Health"])
 async def health_check():
+    """Health check endpoint."""
     logger.info("Health check endpoint called")
     return {"status": "healthy", "service": "backstage-templates-api"}
 
@@ -161,131 +89,42 @@ async def list_templates(
     tag: Optional[List[str]] = Query(None, description="Filter by tags (multiple allowed)"),
     owner: Optional[str] = Query(None, description="Filter by owner"),
     search: Optional[str] = Query(None, description="Search in name and description"),
-    backstage_client: httpx.AsyncClient = Depends(get_backstage_client)
+    client_name: Optional[str] = Query(None, description="Name of the client to use"),
+    plugin: TemplatePlugin = Depends(get_template_plugin)
 ):
     """
     List all available templates with optional filtering.
     """
-    logger.info(f"List templates called with filters: cloud_provider={cloud_provider}, template_type={template_type}, tag={tag}, owner={owner}, search={search}")
+    logger.info(f"List templates called with filters: cloud_provider={cloud_provider}, template_type={template_type}, tag={tag}, owner={owner}, search={search}, client={client_name}")
     
     try:
-        # Try to get templates from Backstage API first
-        logger.info(f"Attempting to fetch templates from Backstage API: {settings.BACKSTAGE_API_URL}")
-        response = await backstage_client.get("/catalog/entities?filter=kind=Template")
-
-        if response.status_code == 200:
-            logger.info(f"Successfully fetched templates from Backstage API")
-            api_templates = response.json()
-            templates = []
-            
-            for api_template in api_templates:
-                # Extract and map fields from Backstage API response
-                template_data = {
-                    "apiVersion": api_template.get("apiVersion", "scaffolder.backstage.io/v1beta3"),
-                    "kind": api_template.get("kind", "Template"),
-                    "metadata": {
-                        "name": api_template.get("metadata", {}).get("name", ""),
-                        "title": api_template.get("spec", {}).get("title", ""),
-                        "description": api_template.get("metadata", {}).get("description", ""),
-                        "tags": api_template.get("metadata", {}).get("tags", []),
-                        "annotations": api_template.get("metadata", {}).get("annotations", {}),
-                    },
-                    "spec": {
-                        "owner": api_template.get("spec", {}).get("owner", ""),
-                        "type": api_template.get("spec", {}).get("type", "other"),
-                        "templater": api_template.get("spec", {}).get("templater", "v1beta3"),
-                        "parameters": api_template.get("spec", {}).get("parameters", []),
-                    },
-                    "output": {
-                        "links": api_template.get("spec", {}).get("output", {}).get("links", []),
-                    }
-                }
-                
-                # Try to determine cloud provider from tags or annotations
-                if "aws" in template_data["metadata"].get("tags", []):
-                    template_data["metadata"]["cloud_provider"] = CloudProvider.AWS
-                elif "azure" in template_data["metadata"].get("tags", []):
-                    template_data["metadata"]["cloud_provider"] = CloudProvider.AZURE
-                elif "gcp" in template_data["metadata"].get("tags", []):
-                    template_data["metadata"]["cloud_provider"] = CloudProvider.GCP
-                
-                template = Template.parse_obj(template_data)
-                templates.append(template)
-        else:
-            # Fallback to local file loading if Backstage API is not available
-            logger.warning(f"Failed to fetch templates from Backstage API. Status code: {response.status_code}. Falling back to local files.")
-            templates = await load_templates_from_catalog()
-    
-    except httpx.RequestError as e:
-        # Handle connection errors (e.g., Backstage API not available)
-        logger.warning(f"Connection error to Backstage API: {str(e)}. Falling back to local files.")
-        templates = await load_templates_from_catalog()
-    
-    except Exception as e:
-        logger.error(f"Unexpected error: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Failed to list templates: {str(e)}")
-    
-    # Apply filters
-    filtered_templates = templates
-    
-    if cloud_provider:
-        filtered_templates = [t for t in filtered_templates if t.metadata.cloud_provider == cloud_provider]
-    
-    if template_type:
-        filtered_templates = [t for t in filtered_templates if t.spec.type == template_type]
-    
-    if tag:
-        filtered_templates = [t for t in filtered_templates if t.metadata.tags and all(t in t.metadata.tags for t in tag)]
-    
-    if owner:
-        filtered_templates = [t for t in filtered_templates if t.spec.owner == owner]
-    
-    if search:
-        search = search.lower()
-        filtered_templates = [
-            t for t in filtered_templates 
-            if (search in t.metadata.name.lower() or 
-                (t.metadata.description and search in t.metadata.description.lower()) or
-                (t.metadata.title and search in t.metadata.title.lower()))
-        ]
-    
-    logger.info(f"Returning {len(filtered_templates)} templates after filtering")
-    return TemplateList(items=filtered_templates, total_count=len(filtered_templates))
-
-async def load_templates_from_catalog():
-    """
-    Load templates from the local catalog-info.yaml file.
-    """
-    logger.info(f"Loading templates from local catalog file: {settings.CATALOG_FILE}")
-    templates = []
-    try:
-        with open(settings.CATALOG_FILE, 'r') as f:
-            catalog_data = yaml.safe_load(f)
+        templates_data = plugin.list_templates(
+            cloud_provider=cloud_provider.value if cloud_provider else None,
+            template_type=template_type.value if template_type else None,
+            tags=tag,
+            owner=owner,
+            search=search,
+            client_name=client_name
+        )
         
-        if catalog_data.get('kind') == 'Location' and 'spec' in catalog_data and 'targets' in catalog_data['spec']:
-            template_paths = catalog_data['spec']['targets']
-            logger.info(f"Found {len(template_paths)} template paths in catalog file")
-            
-            for path in template_paths:
-                if path.endswith('template.yaml'):
-                    full_path = os.path.join(os.path.dirname(settings.CATALOG_FILE), path)
-                    try:
-                        template = await load_template_from_file(full_path)
-                        templates.append(template)
-                    except Exception as e:
-                        logger.error(f"Error loading template {path}: {str(e)}")
-        else:
-            logger.warning(f"Catalog file doesn't have the expected structure")
+        # Convert from plugin's data format to API response format
+        templates_list = TemplateList(
+            items=templates_data.get("items", []),
+            total_count=templates_data.get("total_count", 0)
+        )
+        
+        logger.info(f"Returning {templates_list.total_count} templates after filtering")
+        return templates_list
+        
     except Exception as e:
-        logger.error(f"Error loading catalog: {str(e)}")
-    
-    logger.info(f"Loaded {len(templates)} templates from local files")
-    return templates
+        logger.error(f"Error listing templates: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to list templates: {str(e)}")
 
 @app.get("/templates/{template_name}", response_model=Template, tags=["Templates"])
 async def get_template(
     template_name: str,
-    backstage_client: httpx.AsyncClient = Depends(get_backstage_client)
+    client_name: Optional[str] = Query(None, description="Name of the client to use"),
+    plugin: TemplatePlugin = Depends(get_template_plugin)
 ):
     """
     Get a specific template by name.
@@ -293,104 +132,149 @@ async def get_template(
     logger.info(f"Get template called for: {template_name}")
     
     try:
-        # Try to get from Backstage API first
-        logger.info(f"Attempting to fetch template from Backstage API: {template_name}")
-        response = await backstage_client.get(f"/catalog/entities/by-name/template/default/{template_name}")
+        template_data = plugin.get_template(
+            template_name=template_name,
+            client_name=client_name
+        )
         
-        if response.status_code == 200:
-            logger.info(f"Successfully fetched template from Backstage API: {template_name}")
-            api_template = response.json()
-            template_data = {
-                "apiVersion": api_template.get("apiVersion", "scaffolder.backstage.io/v1beta3"),
-                "kind": api_template.get("kind", "Template"),
-                "metadata": {
-                    "name": api_template.get("metadata", {}).get("name", ""),
-                    "title": api_template.get("spec", {}).get("title", ""),
-                    "description": api_template.get("metadata", {}).get("description", ""),
-                    "tags": api_template.get("metadata", {}).get("tags", []),
-                    "annotations": api_template.get("metadata", {}).get("annotations", {}),
-                },
-                "spec": {
-                    "owner": api_template.get("spec", {}).get("owner", ""),
-                    "type": api_template.get("spec", {}).get("type", "other"),
-                    "templater": api_template.get("spec", {}).get("templater", "v1beta3"),
-                    "parameters": api_template.get("spec", {}).get("parameters", []),
-                },
-                "output": {
-                    "links": api_template.get("spec", {}).get("output", {}).get("links", []),
-                }
-            }
-            
-            # Try to determine cloud provider from tags or annotations
-            if "aws" in template_data["metadata"].get("tags", []):
-                template_data["metadata"]["cloud_provider"] = CloudProvider.AWS
-            elif "azure" in template_data["metadata"].get("tags", []):
-                template_data["metadata"]["cloud_provider"] = CloudProvider.AZURE
-            elif "gcp" in template_data["metadata"].get("tags", []):
-                template_data["metadata"]["cloud_provider"] = CloudProvider.GCP
-                
-            return Template.parse_obj(template_data)
-        else:
-            # Fallback to local file search
-            logger.warning(f"Failed to fetch template from Backstage API. Status code: {response.status_code}. Falling back to local files.")
-            templates = await load_templates_from_catalog()
-            for template in templates:
-                if template.metadata.name == template_name:
-                    return template
-                    
-            logger.error(f"Template not found: {template_name}")
-            raise HTTPException(status_code=404, detail=f"Template '{template_name}' not found")
-    
-    except httpx.RequestError as e:
-        # Fallback to local file search if Backstage API is not available
-        logger.warning(f"Connection error to Backstage API: {str(e)}. Falling back to local files.")
-        templates = await load_templates_from_catalog()
-        for template in templates:
-            if template.metadata.name == template_name:
-                return template
-                
-        logger.error(f"Template not found: {template_name}")
-        raise HTTPException(status_code=404, detail=f"Template '{template_name}' not found")
+        # Convert from plugin's data format to API response format
+        template = Template.parse_obj(template_data)
+        return template
         
     except Exception as e:
-        logger.error(f"Unexpected error: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Failed to retrieve template: {str(e)}")
+        logger.error(f"Error getting template: {str(e)}")
+        raise HTTPException(status_code=404, detail=f"Template '{template_name}' not found")
 
 @app.get("/api-source", tags=["Health"])
-async def get_api_source():
+async def get_api_source(plugin: TemplatePlugin = Depends(get_template_plugin)):
     """
-    Return information about which data source is being used (Backstage API or local files)
+    Return information about which data source is being used.
     """
+    # Get information from the default client
+    default_client = plugin.default_client
+    available_clients = list(plugin.clients.keys())
+    
+    return {
+        "default_client": default_client,
+        "available_clients": available_clients,
+        "backstage_enabled": config.backstage_enabled,
+        "local_enabled": config.local_enabled,
+        "backstage_api_url": config.backstage.base_url,
+        "templates_dir": config.local.templates_dir,
+        "catalog_file": config.local.catalog_file
+    }
 
+@app.post("/templates/{template_name}/execute", response_model=TemplateTaskResponse, tags=["Templates"])
+async def execute_template(
+    template_name: str = Path(..., description="Name of the template to execute"),
+    task_request: TemplateTask = Body(..., description="Template parameters"),
+    client_name: Optional[str] = Query(None, description="Name of the client to use"),
+    # S3 download parameters
+    s3_bucket: Optional[str] = Query(None, description="S3 bucket name for downloading result (overrides config)"),
+    s3_key: Optional[str] = Query(None, description="S3 key for the generated artifact (auto-determined if not provided)"),
+    local_path: Optional[str] = Query(None, description="Local path to download the artifact (uses template if not provided)"),
+    aws_access_key: Optional[str] = Query(None, description="AWS access key ID (overrides config)"),
+    aws_secret_key: Optional[str] = Query(None, description="AWS secret access key (overrides config)"),
+    aws_region: Optional[str] = Query(None, description="AWS region (overrides config)"),
+    poll_interval: Optional[int] = Query(None, description="Polling interval in seconds"),
+    timeout: Optional[int] = Query(None, description="Maximum wait time in seconds"),
+    plugin: TemplatePlugin = Depends(get_template_plugin)
+):
+    """
+    Execute a template to create a component with the provided parameters.
+    
+    This endpoint creates a task in the Backstage scaffolder to instantiate a component
+    based on the specified template and parameters.
+    
+    If S3 parameters are configured (either via query parameters or in config),
+    this endpoint will wait for the task to complete and download the generated
+    artifact from S3. The s3_key will be auto-determined if not provided.
+    """
+    logger.info(f"Executing template: {template_name} with parameters: {task_request.parameters}, client: {client_name}")
+    
+    # Log S3 download config if applicable
+    if s3_bucket or (hasattr(config.backstage, 's3_bucket') and config.backstage.s3_bucket):
+        logger.info(f"S3 download enabled")
+    
     try:
-        async with httpx.AsyncClient() as client:
-            headers = {
-                "Authorization": f"Bearer {token}"
-            }
-            response = await client.get(f"{settings.BACKSTAGE_API_URL}/catalog/entities", timeout=2.0, headers=headers)
-            if response.status_code == 200:
-                return {
-                    "source": "backstage_api",
-                    "status": "connected",
-                    "url": settings.BACKSTAGE_API_URL,
-                    "local_fallback_configured": os.path.exists(settings.CATALOG_FILE)
-                }
-            else:
-                return {
-                    "source": "local_files",
-                    "status": "backstage_api_error",
-                    "backstage_status_code": response.status_code,
-                    "catalog_file": settings.CATALOG_FILE,
-                    "templates_dir": settings.TEMPLATES_DIR
-                }
+        task_response = plugin.execute_template(
+            template_name=template_name,
+            parameters=task_request.parameters,
+            dry_run=task_request.dry_run,
+            client_name=client_name,
+            s3_bucket=s3_bucket,
+            s3_key=s3_key,
+            local_path=local_path,
+            aws_access_key=aws_access_key,
+            aws_secret_key=aws_secret_key,
+            aws_region=aws_region,
+            poll_interval=poll_interval,
+            timeout=timeout
+        )
+        
+        logger.info(f"Template execution initiated: {task_response}")
+        
+        # Add download information to response if available
+        response_data = task_response.dict()
+        if hasattr(task_response, "output_path") and task_response.output_path:
+            logger.info(f"Template result downloaded to: {task_response.output_path}")
+            
+        return task_response
+        
     except Exception as e:
-        return {
-            "source": "local_files",
-            "status": "backstage_api_unavailable",
-            "error": str(e),
-            "catalog_file": settings.CATALOG_FILE,
-            "templates_dir": settings.TEMPLATES_DIR
-        }
+        logger.error(f"Error executing template: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to execute template: {str(e)}")
+
+@app.get("/templates/{template_name}/parameters", tags=["Templates"])
+async def get_template_parameters(
+    template_name: str,
+    client_name: Optional[str] = Query(None, description="Name of the client to use"),
+    plugin: TemplatePlugin = Depends(get_template_plugin)
+):
+    """
+    Get parameters schema for a specific template.
+    
+    This endpoint returns the parameters schema required to create a component
+    using the specified template.
+    """
+    logger.info(f"Getting parameters for template: {template_name}, client: {client_name}")
+    
+    try:
+        parameters_data = plugin.get_template_parameters(
+            template_name=template_name,
+            client_name=client_name
+        )
+        
+        return parameters_data
+        
+    except Exception as e:
+        logger.error(f"Error getting template parameters: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to get template parameters: {str(e)}")
+
+@app.get("/tasks/{task_id}", tags=["Tasks"])
+async def get_task_status(
+    task_id: str,
+    client_name: Optional[str] = Query(None, description="Name of the client to use"),
+    plugin: TemplatePlugin = Depends(get_template_plugin)
+):
+    """
+    Get status of a task.
+    
+    This endpoint returns the current status of a component creation task.
+    """
+    logger.info(f"Getting status for task: {task_id}, client: {client_name}")
+    
+    try:
+        task_status = plugin.get_task_status(
+            task_id=task_id,
+            client_name=client_name
+        )
+        
+        return task_status
+        
+    except Exception as e:
+        logger.error(f"Error getting task status: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to get task status: {str(e)}")
 
 if __name__ == "__main__":
     import uvicorn
